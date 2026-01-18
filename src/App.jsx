@@ -72,7 +72,7 @@ function App() {
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [brandEditing, setBrandEditing] = useState(false);
   const [portfolioListOpen, setPortfolioListOpen] = useState(null);
-  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [authModal, setAuthModal] = useState({ open: false, mode: null });
   const [myBrandDetails, setMyBrandDetails] = useState({
     brand: brand.name.toUpperCase(),
     handle: "@motif.studio",
@@ -454,6 +454,10 @@ function App() {
   };
 
   const handleLike = (fundingId) => {
+    if (!isLoggedIn) {
+      openAuthModal("login-required");
+      return;
+    }
     setFundings((prev) =>
       prev.map((item) => {
         if (item.id !== fundingId) return item;
@@ -704,20 +708,39 @@ function App() {
     setIntroOpen(true);
   };
 
+  const openAuthModal = (mode) => {
+    setAuthModal({ open: true, mode });
+  };
+
+  const closeAuthModal = () => {
+    setAuthModal({ open: false, mode: null });
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setActiveTab("discover");
+    setDetailItem(null);
+    setNotificationOpen(false);
+    setSearchOpen(false);
+    setPortfolioListOpen(null);
+    setSelectedBrandKey(null);
+    setPendingTab(null);
+    setFundings((prev) =>
+      prev.map((item) =>
+        item.liked
+          ? { ...item, liked: false, likes: Math.max(0, item.likes - 1) }
+          : item
+      )
+    );
+  };
+
   const handleRestrictedNav = (nextTab) => {
     if (isLoggedIn) {
       setActiveTab(nextTab);
       return;
     }
     setPendingTab(nextTab);
-    const wantsLogin = window.confirm(
-      "로그인이 필요합니다.\n로그인 화면으로 이동할까요?"
-    );
-    if (wantsLogin) {
-      openLoginFlow();
-    } else {
-      openSignupIntro();
-    }
+    openAuthModal("login-required");
   };
 
   const updateSignupField = (key, value) => {
@@ -741,16 +764,11 @@ function App() {
   };
 
   const toggleStyleSelection = (clothingId) => {
-    setSelectedStyleIds((prev) => {
-      const isSelected = prev.includes(clothingId);
-      const next = isSelected
+    setSelectedStyleIds((prev) =>
+      prev.includes(clothingId)
         ? prev.filter((id) => id !== clothingId)
-        : [...prev, clothingId];
-      if (next.length >= requiredStyleCount && submitAttempted) {
-        setSubmitAttempted(false);
-      }
-      return next;
-    });
+        : [...prev, clothingId]
+    );
   };
 
   const finalizeOnboarding = () => {
@@ -1111,7 +1129,7 @@ function App() {
                       ))}
                     </div>
                     <div className="onboarding-submit">
-                      {submitAttempted && !canFinishOnboarding && (
+                      {!canFinishOnboarding && (
                         <p className="onboarding-hint is-visible">
                           최소 {requiredStyleCount}개 이상 선택해야합니다.
                         </p>
@@ -1123,8 +1141,6 @@ function App() {
                         onClick={() => {
                           if (canFinishOnboarding) {
                             finalizeOnboarding();
-                          } else {
-                            setSubmitAttempted(true);
                           }
                         }}
                       >
@@ -1372,7 +1388,13 @@ function App() {
                 type="button"
                 aria-label="Notifications"
                 aria-expanded={notificationOpen}
-                onClick={() => setNotificationOpen((prev) => !prev)}
+                onClick={() => {
+                  if (isLoggedIn) {
+                    setNotificationOpen((prev) => !prev);
+                  } else {
+                    openAuthModal("login-required");
+                  }
+                }}
               >
                 {notifications.length > 0 && (
                   <span className="notif-dot" aria-hidden="true" />
@@ -1440,8 +1462,12 @@ function App() {
               type="button"
               aria-label="Profile"
               onClick={() => {
-                setActiveTab("profile");
-                setDetailItem(null);
+                if (isLoggedIn) {
+                  setActiveTab("profile");
+                  setDetailItem(null);
+                } else {
+                  openAuthModal("login-required");
+                }
               }}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -2919,7 +2945,11 @@ function App() {
                   <button type="button" className="ghost">
                     구글 계정 변경
                   </button>
-                  <button type="button" className="ghost">
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => openAuthModal("logout-confirm")}
+                  >
                     로그아웃
                   </button>
                 </div>
@@ -2928,6 +2958,69 @@ function App() {
           </section>
         )}
       </main>
+      {authModal.open && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={closeAuthModal}
+            >
+              ×
+            </button>
+            <h3>
+              {authModal.mode === "logout-confirm"
+                ? "로그아웃하시겠어요?"
+                : "로그인이 필요합니다"}
+            </h3>
+            {authModal.mode === "logout-confirm" && (
+              <p>로그아웃하면 Discover 외에는 접근할 수 없습니다.</p>
+            )}
+            {authModal.mode === "login-required" && (
+              <p>로그인 후 이용할 수 있는 기능입니다.</p>
+            )}
+            <div className="auth-modal-actions">
+              {authModal.mode === "logout-confirm" && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={closeAuthModal}
+                >
+                  취소
+                </button>
+              )}
+              {authModal.mode === "login-required" && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    closeAuthModal();
+                    openSignupIntro();
+                  }}
+                >
+                  회원가입
+                </button>
+              )}
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  if (authModal.mode === "logout-confirm") {
+                    handleLogout();
+                    closeAuthModal();
+                    return;
+                  }
+                  closeAuthModal();
+                  openLoginFlow();
+                }}
+              >
+                {authModal.mode === "logout-confirm" ? "로그아웃" : "로그인"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
