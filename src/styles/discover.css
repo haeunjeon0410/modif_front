@@ -463,8 +463,13 @@ button.primary:hover {
   transform: translateY(-1px);
 }
 
+button.primary[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 button.secondary:hover,
 button.ghost:hover {
   background: #f4f4f4;
 }
-

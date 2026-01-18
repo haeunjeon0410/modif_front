@@ -72,6 +72,7 @@ function App() {
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [brandEditing, setBrandEditing] = useState(false);
   const [portfolioListOpen, setPortfolioListOpen] = useState(null);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [myBrandDetails, setMyBrandDetails] = useState({
     brand: brand.name.toUpperCase(),
     handle: "@motif.studio",
@@ -82,11 +83,14 @@ function App() {
   const [introOpen, setIntroOpen] = useState(true);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
-  const [googleConnected, setGoogleConnected] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [pendingTab, setPendingTab] = useState(null);
   const [measurementMode, setMeasurementMode] = useState("manual");
   const [signupDraft, setSignupDraft] = useState(() => ({
     handle: userBase.handle,
     name: userBase.name,
+    password: "",
+    passwordConfirm: "",
     base_photo_url: userBase.base_photo_url,
     measurements: { ...userBase.measurements },
   }));
@@ -672,11 +676,12 @@ function App() {
     setSignupDraft({
       handle: userProfile.handle,
       name: userProfile.name,
+      password: "",
+      passwordConfirm: "",
       base_photo_url: userProfile.base_photo_url,
       measurements: { ...userProfile.measurements },
     });
     setSelectedStyleIds([]);
-    setGoogleConnected(false);
     setOnboardingStep(0);
     setMeasurementMode("manual");
   };
@@ -685,6 +690,34 @@ function App() {
     setIntroOpen(false);
     resetOnboarding();
     setOnboardingOpen(true);
+  };
+
+  const openLoginFlow = () => {
+    setIntroOpen(false);
+    resetOnboarding();
+    setOnboardingStep(0);
+    setOnboardingOpen(true);
+  };
+
+  const openSignupIntro = () => {
+    setOnboardingOpen(false);
+    setIntroOpen(true);
+  };
+
+  const handleRestrictedNav = (nextTab) => {
+    if (isLoggedIn) {
+      setActiveTab(nextTab);
+      return;
+    }
+    setPendingTab(nextTab);
+    const wantsLogin = window.confirm(
+      "로그인이 필요합니다.\n로그인 화면으로 이동할까요?"
+    );
+    if (wantsLogin) {
+      openLoginFlow();
+    } else {
+      openSignupIntro();
+    }
   };
 
   const updateSignupField = (key, value) => {
@@ -708,11 +741,16 @@ function App() {
   };
 
   const toggleStyleSelection = (clothingId) => {
-    setSelectedStyleIds((prev) =>
-      prev.includes(clothingId)
+    setSelectedStyleIds((prev) => {
+      const isSelected = prev.includes(clothingId);
+      const next = isSelected
         ? prev.filter((id) => id !== clothingId)
-        : [...prev, clothingId]
-    );
+        : [...prev, clothingId];
+      if (next.length >= requiredStyleCount && submitAttempted) {
+        setSubmitAttempted(false);
+      }
+      return next;
+    });
   };
 
   const finalizeOnboarding = () => {
@@ -739,8 +777,10 @@ function App() {
         return { ...item, liked: true, likes: item.likes + 1 };
       })
     );
+    setIsLoggedIn(true);
     setOnboardingOpen(false);
-    setActiveTab("discover");
+    setActiveTab(pendingTab || "discover");
+    setPendingTab(null);
   };
 
   useEffect(() => {
@@ -839,12 +879,18 @@ function App() {
   };
 
   const requiredStyleCount = 3;
+  const passwordReady =
+    signupDraft.password.trim().length > 0 &&
+    signupDraft.passwordConfirm.trim().length > 0 &&
+    signupDraft.password === signupDraft.passwordConfirm;
+  const showPasswordHint =
+    signupDraft.passwordConfirm.trim().length > 0 && !passwordReady;
   const canProceedProfile =
-    signupDraft.handle.trim().length > 0 && signupDraft.name.trim().length > 0;
+    signupDraft.handle.trim().length > 0 &&
+    signupDraft.name.trim().length > 0 &&
+    passwordReady;
   const canFinishOnboarding =
-    googleConnected &&
-    canProceedProfile &&
-    selectedStyleIds.length >= requiredStyleCount;
+    canProceedProfile && selectedStyleIds.length >= requiredStyleCount;
 
   if (onboardingOpen) {
     return (
@@ -862,7 +908,7 @@ function App() {
           <header className="onboarding-header">
             <div>
               <span className="onboarding-step">
-                Step {onboardingStep + 1} / 3
+                Step {onboardingStep + 1} / 2
               </span>
               <h2>당신의 스타일 여정을 시작해요.</h2>
               <p>순서대로 입력하고 다음으로 넘어가세요.</p>
@@ -873,32 +919,7 @@ function App() {
             {onboardingStep === 0 && (
               <section className="onboarding-section is-visible">
                 <div className="onboarding-section-inner compact">
-                  <div className="onboarding-panel google-card">
-                    <h3>Google 로그인</h3>
-                    <p>
-                      계정을 연결하면 저장된 취향과 추천이 즉시 동기화됩니다.
-                    </p>
-                    <div className="google-row">
-                      <button
-                        type="button"
-                        className="primary"
-                        onClick={() => {
-                          setGoogleConnected(true);
-                          setOnboardingStep(1);
-                        }}
-                      >
-                        Google로 계속
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {onboardingStep === 1 && (
-              <section className="onboarding-section is-visible">
-                <div className="onboarding-section-inner">
-                  <span className="onboarding-step">Step 2</span>
+                  <span className="onboarding-step">Step 1</span>
                   <div className="onboarding-panel">
                     <h3>기본 정보</h3>
                     <div className="onboarding-grid">
@@ -937,8 +958,40 @@ function App() {
                             placeholder="홍길동"
                           />
                         </label>
+                        <label className="onboarding-field">
+                          비밀번호
+                          <input
+                            type="password"
+                            value={signupDraft.password}
+                            onChange={(event) =>
+                              updateSignupField("password", event.target.value)
+                            }
+                            placeholder="비밀번호 입력"
+                          />
+                        </label>
+                        <label className="onboarding-field">
+                          비밀번호 확인
+                          <input
+                            type="password"
+                            value={signupDraft.passwordConfirm}
+                            onChange={(event) =>
+                              updateSignupField(
+                                "passwordConfirm",
+                                event.target.value
+                              )
+                            }
+                            placeholder="비밀번호 재입력"
+                          />
+                        </label>
                       </div>
                     </div>
+                    <p
+                      className={`onboarding-hint ${
+                        showPasswordHint ? "is-visible" : "is-hidden"
+                      }`}
+                    >
+                      비밀번호가 일치하지 않습니다.
+                    </p>
                     <div className="onboarding-divider" />
                     <div className="measurements-head">
                       <h4>신체 수치</h4>
@@ -1012,7 +1065,7 @@ function App() {
                         type="button"
                         className="primary"
                         disabled={!canProceedProfile}
-                        onClick={() => setOnboardingStep(2)}
+                        onClick={() => setOnboardingStep(1)}
                       >
                         다음
                       </button>
@@ -1022,16 +1075,18 @@ function App() {
               </section>
             )}
 
-            {onboardingStep === 2 && (
+            {onboardingStep === 1 && (
               <section className="onboarding-section is-visible">
-                <div className="onboarding-section-inner">
-                  <span className="onboarding-step">Step 3</span>
+                <div className="onboarding-section-inner compact">
+                  <span className="onboarding-step">Step 2</span>
                   <div className="onboarding-panel">
-                    <div className="style-pick-header">
-                      <h4>취향에 맞는 아이템을 골라주세요.</h4>
-                      <span>
-                        선택 {selectedStyleIds.length}/{requiredStyleCount}
-                      </span>
+                    <div className="style-pick-title-row">
+                      <h3>취향 선택</h3>
+                      <div className="style-pick-title-meta">
+                        <span>
+                          선택 {selectedStyleIds.length}/{requiredStyleCount}
+                        </span>
+                      </div>
                     </div>
                     <div className="style-pick-grid">
                       {onboardingStyleItems.map((item) => (
@@ -1045,28 +1100,33 @@ function App() {
                           }`}
                           onClick={() => toggleStyleSelection(item.id)}
                         >
-                          <img src={item.design_img_url} alt={item.name} />
-                          <div className="style-pick-meta">
-                            <strong>{item.name}</strong>
-                            <span>
-                              {item.style} · {item.category}
-                            </span>
+                          <div className="style-pick-media">
+                            <img src={item.design_img_url} alt={item.name} />
+                            <span
+                              className="style-pick-check"
+                              aria-hidden="true"
+                            />
                           </div>
                         </button>
                       ))}
                     </div>
-                    {!canFinishOnboarding && (
-                      <p className="onboarding-hint">
-                        최소 {requiredStyleCount}개를 선택하면 가입이
-                        완료됩니다.
-                      </p>
-                    )}
                     <div className="onboarding-submit">
+                      {submitAttempted && !canFinishOnboarding && (
+                        <p className="onboarding-hint is-visible">
+                          최소 {requiredStyleCount}개 이상 선택해야합니다.
+                        </p>
+                      )}
                       <button
                         type="button"
                         className="primary"
-                        disabled={!canFinishOnboarding}
-                        onClick={finalizeOnboarding}
+                        aria-disabled={!canFinishOnboarding}
+                        onClick={() => {
+                          if (canFinishOnboarding) {
+                            finalizeOnboarding();
+                          } else {
+                            setSubmitAttempted(true);
+                          }
+                        }}
                       >
                         가입 완료
                       </button>
@@ -1209,7 +1269,11 @@ function App() {
             <button
               key={item.key}
               className={`nav-item ${activeTab === item.key ? "active" : ""}`}
-              onClick={() => setActiveTab(item.key)}
+              onClick={() =>
+                item.key === "discover"
+                  ? setActiveTab(item.key)
+                  : handleRestrictedNav(item.key)
+              }
               type="button"
             >
               <span className="nav-icon">{item.icon}</span>
