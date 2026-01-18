@@ -89,6 +89,12 @@ function App() {
   const [designCoinModal, setDesignCoinModal] = useState(false);
   const [designCoinAlertOpen, setDesignCoinAlertOpen] = useState(false);
   const [alreadyFundedAlertOpen, setAlreadyFundedAlertOpen] = useState(false);
+  const [fundingAlertOpen, setFundingAlertOpen] = useState(false);
+  const [fundingCancelAlertOpen, setFundingCancelAlertOpen] = useState(false);
+  const [fundingConfirmOpen, setFundingConfirmOpen] = useState(false);
+  const [fundingAlertClosing, setFundingAlertClosing] = useState(false);
+  const [fundingCancelClosing, setFundingCancelClosing] = useState(false);
+  const [alreadyFundedClosing, setAlreadyFundedClosing] = useState(false);
   const [aiDesignEditMode, setAiDesignEditMode] = useState(false);
   const [aiDesignDraft, setAiDesignDraft] = useState({
     name: "",
@@ -687,19 +693,8 @@ function App() {
       )
     : 0;
 
-  const handleFundNow = () => {
+  const finalizeFundNow = () => {
     if (!detailItem?.clothing?.id || !detailItem?.funding?.brand) return;
-    const alreadyFunded = investments.some(
-      (item) =>
-        item.brand === detailItem.funding.brand &&
-        item.itemName === detailItem.clothing.name,
-    );
-    if (alreadyFunded) {
-      setAlreadyFundedAlertOpen(true);
-      setActiveTab("portfolio");
-      setPortfolioTab("investor");
-      return;
-    }
     const nextId = Math.max(0, ...investments.map((item) => item.id)) + 1;
     const eta = formatDate(new Date(Date.now() + 1000 * 60 * 60 * 24 * 30));
     const nextItem = {
@@ -712,8 +707,24 @@ function App() {
       eta,
     };
     setInvestments((prev) => [nextItem, ...prev]);
+    setFundingAlertOpen(true);
+    setFundingConfirmOpen(false);
     setActiveTab("portfolio");
     setPortfolioTab("investor");
+  };
+
+  const handleFundNow = () => {
+    if (!detailItem?.clothing?.id || !detailItem?.funding?.brand) return;
+    const alreadyFunded = investments.some(
+      (item) =>
+        item.brand === detailItem.funding.brand &&
+        item.itemName === detailItem.clothing.name,
+    );
+    if (alreadyFunded) {
+      setAlreadyFundedAlertOpen(true);
+      return;
+    }
+    setFundingConfirmOpen(true);
   };
 
   const myBrandProfile = useMemo(
@@ -819,9 +830,17 @@ function App() {
       canvasPopupRef.current.focus();
       return;
     }
-    const popup = window.open("", "modif-canvas", "width=1280,height=900");
+    const width = window.screen.availWidth || 1280;
+    const height = window.screen.availHeight || 900;
+    const popup = window.open(
+      "",
+      "modif-canvas",
+      `width=${width},height=${height},left=0,top=0`,
+    );
     if (!popup) return;
     canvasPopupRef.current = popup;
+    popup.moveTo(0, 0);
+    popup.resizeTo(width, height);
     const source = designCanvasRef.current;
     const dataUrl = source ? source.toDataURL("image/png") : "";
     const payload = {
@@ -1438,6 +1457,30 @@ function App() {
     setCancelFundingModal({ open: false, investmentId: null });
   };
 
+  const closeFundingAlert = () => {
+    setFundingAlertClosing(true);
+    window.setTimeout(() => {
+      setFundingAlertOpen(false);
+      setFundingAlertClosing(false);
+    }, 250);
+  };
+
+  const closeFundingCancelAlert = () => {
+    setFundingCancelClosing(true);
+    window.setTimeout(() => {
+      setFundingCancelAlertOpen(false);
+      setFundingCancelClosing(false);
+    }, 250);
+  };
+
+  const closeAlreadyFundedAlert = () => {
+    setAlreadyFundedClosing(true);
+    window.setTimeout(() => {
+      setAlreadyFundedAlertOpen(false);
+      setAlreadyFundedClosing(false);
+    }, 250);
+  };
+
   const submitLogin = () => {
     if (!loginDraft.handle.trim() || !loginDraft.password.trim()) return;
     setIsLoggedIn(true);
@@ -1568,6 +1611,30 @@ function App() {
   }, [introOpen]);
 
   useEffect(() => {
+    if (!fundingAlertOpen) return undefined;
+    const timer = window.setTimeout(() => {
+      closeFundingAlert();
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [fundingAlertOpen]);
+
+  useEffect(() => {
+    if (!fundingCancelAlertOpen) return undefined;
+    const timer = window.setTimeout(() => {
+      closeFundingCancelAlert();
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [fundingCancelAlertOpen]);
+
+  useEffect(() => {
+    if (!alreadyFundedAlertOpen) return undefined;
+    const timer = window.setTimeout(() => {
+      closeAlreadyFundedAlert();
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [alreadyFundedAlertOpen]);
+
+  useEffect(() => {
     if (!introOpen) return;
     const sections = document.querySelectorAll(
       ".intro-section, .intro-actions",
@@ -1632,6 +1699,7 @@ function App() {
 
   const toggleFollowBrand = (handle) => {
     if (!handle) return;
+    if (handle === myBrandDetails.handle) return;
     setFollowedBrands((prev) => {
       const isFollowed = prev.includes(handle);
       setBrandProfiles((current) =>
@@ -1859,13 +1927,13 @@ function App() {
                                       type="button"
                                       className="ai-file-remove"
                                       aria-label="Remove uploaded photo"
-                                      onClick={() => setAiFileName(null)}
-                                    >
-                                      ?
+                                    onClick={() => setAiFileName(null)}
+                                  >
+                                      ×
                                     </button>
                                   </span>
                                 ) : (
-                                  "?? ?? ?? 1?? ??? AI? ?? ??? ???."
+                                  "정면 전신 사진 1장을 업로드하면 AI가 자동으로 치수를 계산합니다."
                                 )}
                               </span>
                             </div>
@@ -2465,9 +2533,9 @@ function App() {
                       >
                         {[
                           { value: "All", label: "전체" },
-                          { value: "Mens", label: "??" },
-                          { value: "Womens", label: "??" },
-                          { value: "Unisex", label: "??" },
+                          { value: "Mens", label: "남자" },
+                          { value: "Womens", label: "여자" },
+                          { value: "Unisex", label: "공용" },
                         ].map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
@@ -2564,9 +2632,14 @@ function App() {
                             )}
                           </span>
                         </div>
-                        <span className="designer-handle">
-                          {item.designer_handle}
-                        </span>
+                        <div className="card-meta-row">
+                          <span className="designer-handle">
+                            {item.designer_handle}
+                          </span>
+                          <span className="participant">
+                            {item.participant_count}명 참여
+                          </span>
+                        </div>
                       </div>
                       <div className="progress">
                         <div
@@ -2579,9 +2652,6 @@ function App() {
                           ₩{currency.format(item.current_amount)} 달성
                         </span>
                         <span>목표 ₩{currency.format(item.goal_amount)}</span>
-                      </div>
-                      <div className="participant">
-                        {item.participant_count}명 참여
                       </div>
                     </div>
                   </article>
@@ -3127,7 +3197,7 @@ function App() {
                   <div className="workbench-prompt">
                     <div className="design-selects">
                       <label className="field">
-                        ??
+                        성별
                         <select
                           value={designGender}
                           onChange={(event) =>
@@ -3135,9 +3205,9 @@ function App() {
                           }
                         >
                           {[
-                            { value: "Mens", label: "??" },
-                            { value: "Womens", label: "??" },
-                            { value: "Unisex", label: "??" },
+                            { value: "Mens", label: "남자" },
+                            { value: "Womens", label: "여자" },
+                            { value: "Unisex", label: "공용" },
                           ].map((item) => (
                             <option key={item.value} value={item.value}>
                               {item.label}
@@ -3209,7 +3279,7 @@ function App() {
                       ))}
                     </div>
                     <label className="field">
-                      Design Prompt
+                      디자인 프롬프트
                       <textarea
                         value={prompt}
                         onChange={(event) => setPrompt(event.target.value)}
@@ -3774,16 +3844,6 @@ function App() {
                           }))
                         }
                       />
-                      <input
-                        value={myBrandDetails.location}
-                        onChange={(event) =>
-                          setMyBrandDetails((prev) => ({
-                            ...prev,
-                            location: event.target.value,
-                          }))
-                        }
-                        placeholder="지역"
-                      />
                     </>
                   ) : (
                     <>
@@ -3792,29 +3852,34 @@ function App() {
                         src={myBrandDetails.logoUrl}
                         alt={`${selectedBrandProfile.brand} logo`}
                       />
-                      <strong>{selectedBrandProfile.brand}</strong>
-                      <span>{selectedBrandProfile.handle}</span>
+                      <strong>
+                        {selectedBrandProfile.brand}{" "}
+                        <span className="brand-handle-inline">
+                          {selectedBrandProfile.handle}
+                        </span>
+                      </strong>
                       <p>{selectedBrandProfile.bio}</p>
-                      <small>{selectedBrandProfile.location}</small>
                     </>
                   )}
                 </div>
                 <div className="brand-hero-actions">
-                  <button
-                    type="button"
-                    className={
-                      followedBrands.includes(selectedBrandProfile.handle)
-                        ? "secondary"
-                        : "primary"
-                    }
-                    onClick={() =>
-                      toggleFollowBrand(selectedBrandProfile.handle)
-                    }
-                  >
-                    {followedBrands.includes(selectedBrandProfile.handle)
-                      ? "Following"
-                      : "Follow"}
-                  </button>
+                  {selectedBrandProfile.handle !== myBrandDetails.handle && (
+                    <button
+                      type="button"
+                      className={
+                        followedBrands.includes(selectedBrandProfile.handle)
+                          ? "secondary"
+                          : "primary"
+                      }
+                      onClick={() =>
+                        toggleFollowBrand(selectedBrandProfile.handle)
+                      }
+                    >
+                      {followedBrands.includes(selectedBrandProfile.handle)
+                        ? "Following"
+                        : "Follow"}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -3822,10 +3887,6 @@ function App() {
                 <div>
                   <strong>{selectedBrandProfile.followerCount}</strong>
                   <span>Followers</span>
-                </div>
-                <div>
-                  <strong>{selectedBrandProfile.followingCount}</strong>
-                  <span>Following</span>
                 </div>
                 <div>
                   <strong>{brandFeed.length}</strong>
@@ -3836,7 +3897,7 @@ function App() {
 
             <div className="brand-feed">
               {brandFeed.length === 0 ? (
-                <p className="empty">등록된 디자인이 없습니다.</p>
+                <p className="empty empty-brand">등록된 디자인이 없습니다.</p>
               ) : (
                 brandFeed.map((entry) => (
                   <button
@@ -4269,6 +4330,7 @@ function App() {
                       (entry) => entry.id !== cancelFundingModal.investmentId,
                     ),
                   );
+                  setFundingCancelAlertOpen(true);
                   closeCancelFundingModal();
                 }}
               >
@@ -4560,28 +4622,101 @@ function App() {
           </div>
         </div>
       )}
-      {alreadyFundedAlertOpen && (
+      {fundingConfirmOpen && (
         <div className="auth-modal" role="dialog" aria-modal="true">
-          <div className="auth-modal-content design-coin-modal">
+          <div className="auth-modal-content funding-confirm-modal">
             <button
               type="button"
               className="auth-modal-close"
               aria-label="Close"
-              onClick={() => setAlreadyFundedAlertOpen(false)}
+              onClick={() => setFundingConfirmOpen(false)}
             >
               ×
             </button>
-            <h3>이미 펀딩한 옷입니다.</h3>
-            <p>해당 아이템은 이미 포트폴리오에 추가되어 있습니다.</p>
+            <h3>펀딩을 신청할까요?</h3>
+            <p>신청 후에는 포트폴리오에서 관리할 수 있습니다.</p>
             <div className="auth-modal-actions">
               <button
                 type="button"
-                className="primary"
-                onClick={() => setAlreadyFundedAlertOpen(false)}
+                className="secondary"
+                onClick={() => setFundingConfirmOpen(false)}
               >
-                확인
+                돌아가기
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={finalizeFundNow}
+              >
+                펀딩 신청
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {alreadyFundedAlertOpen && (
+        <div
+          className={`toast-banner ${
+            alreadyFundedClosing ? "is-leaving" : ""
+          }`}
+          role="status"
+        >
+          <div className="toast-content">
+            <strong>이미 펀딩한 옷입니다.</strong>
+            <span>해당 아이템은 포트폴리오에 있습니다.</span>
+          </div>
+          <div className="toast-actions">
+            <button
+              type="button"
+              className="primary"
+              onClick={closeAlreadyFundedAlert}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+      {fundingAlertOpen && (
+        <div
+          className={`toast-banner ${
+            fundingAlertClosing ? "is-leaving" : ""
+          }`}
+          role="status"
+        >
+          <div className="toast-content">
+            <strong>펀딩이 신청되었습니다.</strong>
+            <span>포트폴리오에서 진행 상황을 확인하세요.</span>
+          </div>
+          <div className="toast-actions">
+            <button
+              type="button"
+              className="primary"
+              onClick={closeFundingAlert}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+      {fundingCancelAlertOpen && (
+        <div
+          className={`toast-banner ${
+            fundingCancelClosing ? "is-leaving" : ""
+          }`}
+          role="status"
+        >
+          <div className="toast-content">
+            <strong>펀딩이 취소되었습니다.</strong>
+            <span>해당 항목이 포트폴리오에서 삭제되었습니다.</span>
+          </div>
+          <div className="toast-actions">
+            <button
+              type="button"
+              className="primary"
+              onClick={closeFundingCancelAlert}
+            >
+              확인
+            </button>
           </div>
         </div>
       )}

@@ -13,9 +13,9 @@
 .modal-content {
   background: #ffffff;
   border-radius: 20px;
-  max-width: 1200px; /* 아까 넓힌 크기 유지 */
-  width: 95%;
-  padding: 48px; /* 내부 여백 */
+  max-width: 1090px; /* 아까 넓힌 크기 유지 */
+  width: 90%;
+  padding: 10px; /* 내부 여백 */
 
   position: relative;
   display: flex;
@@ -25,9 +25,8 @@
   margin: auto;
 
   /* 높이 설정 정리 (화면의 85%만큼만 커지게) */
-  height: 82vh;
-  max-height: 90vh; /* 화면이 작아도 90%는 넘지 않게 안전장치 */
-
+  max-height: 82vh;   /* ⭕ 최대 높이만 제한 */
+  padding-bottom: 72px;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
@@ -46,35 +45,18 @@
 /* modal.css */
 
 .modal-body {
-  /* [수정] Grid를 Flex로 변경 */
   display: flex;
-
-  /* [핵심] 이걸 넣어야 내용물이 위쪽으로 딱 붙고, 밑으로 안 늘어납니다! */
   align-items: flex-start;
-
   gap: 50px;
-  margin-top: 20px;
+  margin-top: 50px;
 
-  /* 전체 높이는 유지 (스크롤 때문) */
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
 }
 
-/* modal.css */
-
-/* modal.css */
 
 .detail-media {
-  /* [수정] flex로 너비 45% 고정 */
-  flex: 0 0 45%;
-  width: 45%;
 
-  /* [핵심] height: 100% 삭제하고 비율로 설정 */
-  /* height: 100%;  <-- 이거 절대 넣으면 안 돼요! (삭제됨) */
-  /* max-height: 520px; <-- 이것도 삭제하세요. 비율이 알아서 조절합니다. */
-
-  aspect-ratio: 4 / 5; /* 4:5 비율 유지 */
+  flex: 0 0 40%;
+  width: 40%;
 
   position: relative;
   display: flex;
@@ -85,12 +67,14 @@
   overflow: hidden;
   padding: 0;
   margin-bottom: 0;
+    max-height: 420px;   /* ⭕ 원하는 만큼 */
+  align-self: flex-start;
 }
 
 /* 박스 안의 이미지 크기 잡아주기 */
 .detail-media img {
-  width: 85%;
-  height: 85%;
+  width: 90%;
+  height: 90%;
   object-fit: contain; /* 비율 유지하며 박스 안에 쏙 들어감 */
   border-radius: 0; /* 필요하면 조정 */
 }
@@ -156,12 +140,10 @@
 
 .detail-scroll {
   flex: 1;
-
-  height: 100%;
-  overflow-y: auto;
-  padding-right: 10px;
-  padding-bottom: 40px;
+  max-width: 550px;   /* 🔥 이게 핵심 */
+  margin-right: auto; /* 좌측에 고정 */
 }
+
 
 .detail-scroll .detail-block {
   padding: 8px 0 24px;
@@ -207,10 +189,30 @@
   border-radius: 20px;
   padding: 24px;
   background: #ffffff;
+  height: 64vh;
+  max-height: 640px;
+  display: flex;
+  flex-direction: column;
 }
 
 .ai-design-stack .modal-header {
   margin-bottom: 24px;
+}
+
+.ai-design-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ai-design-stack .modal-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.ai-design-stack .detail-scroll {
+  min-height: 360px;
 }
 
 .ai-design-input,
@@ -329,11 +331,11 @@
   justify-content: space-between;
   gap: 10px;
 }
-
 .price-row {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  justify-content: space-between;
+  align-items: center;   /* 🔥 PRICE 라인 기준으로 올림 */
+  
 }
 
 .detail-fund-btn {
@@ -342,16 +344,23 @@
   padding: 6px 14px;
   border-radius: 999px;
   font-size: 12px;
+  position: relative;
+  right: -45px;   
+  top: 31px;     
 }
-
-.price-row > div {
+.price-row > .price-info {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
 }
 
+.price-row > div {
+  display: block;
+}
 .price-like-row {
-  justify-content: flex-end;
+  display: flex;
+  align-items: center;
+  gap: 12px;             /* 좋아요 ↔ 버튼 간격 */
 }
 
 .price-row .like-count-inline {
@@ -361,12 +370,13 @@
 .price-label {
   font-size: 12px;
   text-transform: uppercase;
+  display: block;
   letter-spacing: 0.08em;
   color: var(--muted);
 }
 
 .price-strong {
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 700;
   letter-spacing: 0.2px;
 }
@@ -735,4 +745,9 @@
   border-radius: 10px;
   background: #111111;
   color: #ffffff;
+}
+
+.modal-stack {
+  max-width: 1000px;
+  margin: 50px auto 0; /* 🔥 bottom 제거 */
 }
