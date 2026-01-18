@@ -715,6 +715,16 @@
   background: #000000;
   overflow-y: auto;
   overscroll-behavior: contain;
+  height: 100vh;
+}
+
+.intro-overlay::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 1;
+  pointer-events: none;
 }
 
 body.intro-open {
@@ -723,26 +733,34 @@ body.intro-open {
 
 .intro-hero {
   position: relative;
-  height: 140vh;
+  height: 100vh;
   width: 100%;
   flex: 0 0 auto;
   overflow: hidden;
+  z-index: 2;
 }
 
 .intro-video {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.85;
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 .intro-fade {
-  position: absolute;
-  inset: auto 0 0 0;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
   height: 220px;
   background: linear-gradient(0deg, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0));
+  pointer-events: none;
 }
 
 .intro-title-block {
@@ -750,6 +768,7 @@ body.intro-open {
   left: 80px;
   top: 42%;
   transform: translateY(-50%);
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -768,12 +787,18 @@ body.intro-open {
   text-transform: uppercase;
   letter-spacing: 4px;
   color: rgba(255, 255, 255, 0.8);
+  margin-top: -16px;   /* 위로 쭉 끌어당기기 (숫자를 더 키우면 더 위로 가) */
+  margin-left: 5px;
+
 }
 
 .intro-content {
   padding: 0 24px;
   display: block;
-  background: #000000;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+  padding-bottom: 120px;
 }
 
 .intro-body {
@@ -1157,29 +1182,40 @@ body.intro-open {
   background: #f7f7f7;
   overflow: hidden;
 }
-/* ✨ 기존 내용물(이미지 등)은 모두 숨김 */
-.profile-icon > * {
-  display: none;
-}
-
-/* ✨ 아이콘 영역을 꽉 채우고 중앙 정렬 준비 */
+/* 1. 프로필 영역 틀 잡기 */
 .profile-icon {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-style: normal; /* 혹시 아이콘 폰트가 적용되어 기울어지는 것 방지 */
+  font-style: normal;
+  position: relative; /* 내용을 겹쳐서 보여주기 위해 필요 */
 }
 
-/* ✨ 가상의 요소를 만들어 "profile" 글자 삽입 */
+/* 2. 'profile' 글자는 배경처럼 뒤에 깔아두기 */
 .profile-icon::after {
-  content: "profile";  /* 원하는 텍스트 내용 */
-  font-size: 13px;     /* 글자 크기 */
-  color: #999999;      /* 글자 색상 (연한 회색) */
-  font-weight: 500;    /* 글자 굵기 */
-  letter-spacing: 0.5px; /* 자간 */
+  content: "profile";
+  font-size: 13px;
+  color: #999999;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  position: absolute; /* 중앙에 고정 */
+  z-index: 1;         /* 맨 뒤로 보냄 */
 }
+
+/* 3. 업로드된 이미지는 글자 위를 덮도록 설정 */
+.profile-icon img {
+  display: block;     /* 숨겨졌던 이미지 다시 보이게! */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  position: relative;
+  z-index: 5;         /* 글자보다 훨씬 앞으로 오게 설정 */
+  background: #f7f7f7; /* 이미지가 투명할 경우를 대비해 배경색 지정 */
+}
+
 
 .profile-photo-upload input {
   position: absolute;
@@ -1187,8 +1223,10 @@ body.intro-open {
   height: 100%;
   opacity: 0;
   cursor: pointer;
+  
+  /* ✨ 아래 한 줄 추가: 무엇이 밑에 깔리든 이 투명 버튼이 무조건 맨 위에 오게 함 */
+  z-index: 10; 
 }
-
 
 .avatar-placeholder {
   font-size: 40px;
@@ -1270,11 +1308,15 @@ body.intro-open {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 16px;
+  
+  /* padding: 24px; <-- 아까 늘렸던 것을 다시 줄여서 얇게 만듦 */
+  padding: 12px 20px; 
+  
   border: 1px dashed rgba(0, 0, 0, 0.2);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.7);
 }
+
 
 .ai-upload-text {
   display: flex;
@@ -1289,23 +1331,38 @@ body.intro-open {
   color: #111111;
 }
 
+/* 2. 버튼을 동그라미 아이콘 형태로 변경 */
 .ai-upload-btn {
+  /* 크기 고정 및 원형 만들기 */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+  
+  /* 아이콘 중앙 정렬 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* 색상 유지 */
   border: 1px solid #111111;
   background: #111111;
   color: #ffffff;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12px;
   cursor: pointer;
+  flex-shrink: 0; /* 찌그러짐 방지 */
 }
-
 .ai-upload-btn input {
   display: none;
 }
 
+.ai-upload-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
 .ai-hint {
-  font-size: 12px;
-  color: #666666;
+  display: none;
 }
 
 .measurement-container {

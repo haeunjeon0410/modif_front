@@ -51,6 +51,7 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [fabric, setFabric] = useState({ stretch: 5, weight: 5, stiffness: 5 });
+  const [aiFileName, setAiFileName] = useState(null);
   const [brand, setBrand] = useState({
     name: "Motif Studio",
     clothes_count: 7,
@@ -1767,25 +1768,55 @@ function App() {
                     </div>
                     <div className="measurement-container">
                       {measurementMode === "ai" ? (
-                        <div className="ai-measure-panel">
-                          <div className="ai-upload">
-                            <div className="ai-upload-text">
-                              <strong>전신 사진 업로드</strong>
-                              <span>
-                                정면 전신 사진 1장을 업로드하면 AI가 자동으로
-                                치수를 계산합니다.
-                              </span>
-                            </div>
-                            <label className="ai-upload-btn">
-                              사진
-                              <input type="file" accept="image/*" />
-                            </label>
-                          </div>
-                          <div className="ai-hint">
-                            밝은 배경에서 정면 자세로 촬영된 이미지를
-                            권장합니다.
-                          </div>
-                        </div>
+  <div className="ai-measure-panel">
+    <div className="ai-upload">
+      <div className="ai-upload-text">
+        <strong>전신 사진 업로드</strong>
+        <span>
+          {/* ✨ 파일명이 있으면 파일명을, 없으면 안내 문구를 표시 */}
+          {aiFileName ? aiFileName : "정면 전신 사진 1장을 업로드하면 AI가 자동으로 치수를 계산합니다."}
+        </span>
+      </div>
+      <label className="ai-upload-btn">
+        <svg
+          className="ai-upload-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            d="M4 7h3l2-2h6l2 2h3v12H4z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+          <circle
+            cx="12"
+            cy="13"
+            r="3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+        </svg>
+        <input 
+          type="file" 
+          accept="image/*" 
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              setAiFileName(file.name); // ✨ 선택된 파일 이름 저장
+              // (필요하다면 여기에 이미지 처리 로직 추가)
+            }
+          }}
+        />
+      </label>
+    </div>
+    {/* .ai-hint div는 base.css에서 숨겼으므로 코드는 그대로 둬도 안 보입니다 */}
+    <div className="ai-hint">
+      밝은 배경에서 정면 자세로 촬영된 이미지를 권장합니다.
+    </div>
+  </div>
                       ) : (
                         <div className="onboarding-measurements">
                           {signupMeasurementFields.map((field) => (
@@ -1903,7 +1934,7 @@ function App() {
             <div className="intro-fade" />
             <div className="intro-title-block">
               <span className="intro-title-main">Modif</span>
-              <span className="intro-title-sub">Modify Your Mode</span>
+              <span className="intro-title-sub">Mode + if</span>
             </div>
           </section>
           <section className="intro-content">
