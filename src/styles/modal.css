@@ -15,52 +15,63 @@
   border-radius: 20px;
   max-width: 1200px; /* 아까 넓힌 크기 유지 */
   width: 95%;
-  padding: 44px; /* 내부 여백 */
-  
+  padding: 48px; /* 내부 여백 */
+
   position: relative;
   display: flex;
   flex-direction: column;
 
   /* ✨ 치트키: 이 한 줄이면 무조건 화면 정중앙으로 붕 뜹니다! */
-  margin: auto; 
+  margin: auto;
 
   /* 높이 설정 정리 (화면의 85%만큼만 커지게) */
-  height: 82vh; 
+  height: 82vh;
   max-height: 90vh; /* 화면이 작아도 90%는 넘지 않게 안전장치 */
 
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 32px;
+  margin-bottom: 40px;
 }
 .modal-body {
-  display: grid;
-  /* ✨ 핵심 1: 비율을 1:1로 고정해서 내용 양과 상관없이 위치 딱 맞춤 */
-  grid-template-columns: 1fr 1fr; 
-  gap: 40px; /* 사진과 글 사이 간격을 더 시원하게 (28px -> 40px) */
+  /* 기존 grid 대신 flex 사용 */
+  display: flex;
+  gap: 50px; /* 간격 더 시원하게 */
+  
+  /* [핵심] 내용물들이 위쪽에 딱 붙어서 시작하게 함 (늘어나지 않음) */
+  align-items: flex-start; 
   
   margin-top: 20px;
-  flex: 1;
-  min-height: 0;
   height: 100%;
-  overflow: hidden; /* 레이아웃 깨짐 방지 */
+  min-height: 0;
+  overflow: hidden;
 }
 
 .detail-media {
   position: relative;
-  height: 100%;
-  max-height: 520px;
+  
+  /* [중요] flex: 0 0 45% -> 전체 너비의 45%만 차지해라 (나머지는 글씨 공간) */
+  flex: 0 0 45%;
+  
+  /* [핵심 수정] height: 100% 삭제! -> 삭제 안 하면 계속 늘어납니다 */
+  /* 대신 비율을 4:5 정도로 고정해서 깔끔한 박스 만들기 */
+  aspect-ratio: 4 / 5;
+  
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f7f7f7;
-  padding: 24px 16px 36px;
-  margin-bottom: 16px;
+  border-radius: 8px; /* 둥근 모서리 */
+  
+  /* 박스 자체에는 여백을 주지 말고 이미지가 꽉 차게 */
+  padding: 0; 
+  margin-bottom: 0;
 }
 
 .modal-body img {
@@ -130,8 +141,9 @@
 }
 
 .detail-scroll {
+  flex: 1;
+  
   height: 100%;
-  min-height: 0;
   overflow-y: auto;
   padding-right: 10px;
   padding-bottom: 40px;
@@ -244,7 +256,6 @@
   line-height: 1.7;
 }
 
-
 .detail-title-row {
   display: flex;
   align-items: center;
@@ -263,8 +274,6 @@
   align-items: center;
   gap: 6px;
 }
-
-
 
 .price-like-row {
   justify-content: flex-end;
@@ -390,6 +399,17 @@
   background: #000000;
   border-radius: 999px;
   transition: width 0.4s ease;
+  transform-origin: left;
+  animation: progress-fill 0.6s ease;
+}
+
+@keyframes progress-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .story-percent {

@@ -63,12 +63,62 @@
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
+  position: relative;
 }
 
 .tool-group {
   display: inline-flex;
   gap: 8px;
   align-items: center;
+}
+
+.tool-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.tool-sub {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  z-index: 5;
+}
+
+.tool-sub.is-visible {
+  display: block;
+}
+
+.tool-sub .bubble {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.tool-sub .bubble::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.clear-btn {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: #111111;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
 .tool-btn {

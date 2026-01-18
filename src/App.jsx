@@ -136,6 +136,7 @@ function App() {
   const [designTool, setDesignTool] = useState("brush");
   const [designColor, setDesignColor] = useState("#111111");
   const [designSize, setDesignSize] = useState(6);
+  const [showClearBubble, setShowClearBubble] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [tempDesigns, setTempDesigns] = useState([]);
   const designCanvasRef = useRef(null);
@@ -718,13 +719,19 @@ function App() {
     .actions { display: flex; gap: 8px; }
     .btn { border: 1px solid #111; background: #111; color: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
     .btn.secondary { background: #fff; color: #111; }
-    .btn.icon-btn { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
-    .btn.icon-btn svg { width: 18px; height: 18px; }
     .panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 16px; padding: 16px; display: grid; gap: 16px; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; position: relative; }
+    .tool-sub { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); display: none; z-index: 5; }
+    .tool-sub.is-visible { display: block; }
+    .tool-sub .bubble { position: relative; display: inline-flex; align-items: center; white-space: nowrap; }
+    .tool-sub .bubble::before { content: ""; position: absolute; top: -6px; left: 50%; width: 10px; height: 10px; background: #fff; border-left: 1px solid #e5e5e5; border-top: 1px solid #e5e5e5; transform: translateX(-50%) rotate(45deg); }
+    .clear-btn { border: 1px solid #e5e5e5; background: #fff; color: #111; border-radius: 999px; padding: 4px 10px; font-size: 11px; cursor: pointer; box-shadow: 0 8px 16px rgba(0,0,0,0.08); }
     .tool-group { display: inline-flex; gap: 8px; align-items: center; }
+    .tool-anchor { position: relative; display: inline-flex; }
+    .tool-group.end { margin-left: auto; }
     .tool-btn { border: 1px solid #e5e5e5; background: #fff; color: #111; border-radius: 999px; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; }
     .tool-btn.active { border-color: #111; background: #111; color: #fff; }
+    .tool-btn:disabled { color: #b5b5b5; border-color: #e2e2e2; cursor: default; }
     .tool-btn svg { width: 16px; height: 16px; }
     .color-picker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #666; }
     .color-picker input { width: 28px; height: 28px; border-radius: 8px; border: 1px solid #e5e5e5; padding: 0; background: transparent; cursor: pointer; }
@@ -741,18 +748,6 @@ function App() {
         <p>드로잉 후 저장하면 워크벤치로 돌아갑니다.</p>
       </div>
       <div class="actions">
-        <button class="btn secondary icon-btn" id="undoBtn" aria-label="되돌리기" title="되돌리기">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 8l-4 4 4 4"/>
-            <path d="M3 12h10a6 6 0 1 1 0 12"/>
-          </svg>
-        </button>
-        <button class="btn secondary icon-btn" id="redoBtn" aria-label="되돌리기 취소" title="되돌리기 취소">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 8l4 4-4 4"/>
-            <path d="M21 12H11a6 6 0 1 0 0 12"/>
-          </svg>
-        </button>
         <button class="btn secondary" id="cancelBtn">돌아가기</button>
         <button class="btn" id="saveBtn">저장</button>
       </div>
@@ -762,17 +757,23 @@ function App() {
         <div class="tool-group">
           <button class="tool-btn" id="brushBtn" title="Brush" aria-label="Brush">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 21h6"/>
-              <path d="M6 19l9-9 3 3-9 9H6z"/>
-              <path d="M14 8l2-2 4 4-2 2"/>
+              <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
+              <path d="m15 5 4 4"/>
             </svg>
           </button>
-          <button class="tool-btn" id="eraserBtn" title="Eraser" aria-label="Eraser">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 15l7-7 7 7-4 4H9z"/>
-              <path d="M9 19h8"/>
-            </svg>
-          </button>
+          <div class="tool-anchor">
+            <button class="tool-btn" id="eraserBtn" title="Eraser" aria-label="Eraser">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21"/>
+                <path d="m5.082 11.09 8.828 8.828"/>
+              </svg>
+            </button>
+            <div class="tool-sub" id="clearWrap">
+              <div class="bubble">
+                <button class="clear-btn" id="clearBtn">모두 지우기</button>
+              </div>
+            </div>
+          </div>
           <button class="tool-btn" id="selectBtn" title="Select" aria-label="Select">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
               <rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/>
@@ -788,6 +789,20 @@ function App() {
         </div>
         <label class="color-picker">색상 <input type="color" id="colorInput" /></label>
         <label class="size-control">굵기 <input type="range" min="2" max="14" id="sizeInput" /></label>
+        <div class="tool-group end">
+          <button class="tool-btn" id="undoBtn" aria-label="되돌리기" title="되돌리기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 8l-4 4 4 4"/>
+              <path d="M3 12h10a6 6 0 1 1 0 12"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="redoBtn" aria-label="되돌리기 취소" title="되돌리기 취소">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 8l4 4-4 4"/>
+              <path d="M21 12H11a6 6 0 1 0 0 12"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <canvas id="canvas" width="1100" height="720"></canvas>
     </div>
@@ -806,10 +821,13 @@ function App() {
     const cancelBtn = document.getElementById("cancelBtn");
     const undoBtn = document.getElementById("undoBtn");
     const redoBtn = document.getElementById("redoBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const clearWrap = document.getElementById("clearWrap");
 
     let tool = state.tool || "brush";
     let color = state.color || "#111111";
     let size = state.size || 6;
+    let clearVisible = false;
     let selection = {
       active: false,
       selecting: false,
@@ -831,6 +849,17 @@ function App() {
     const history = [];
     const redoHistory = [];
     const maxHistory = 30;
+    const updateUndoRedoUI = () => {
+      undoBtn.disabled = history.length <= 1;
+      redoBtn.disabled = redoHistory.length === 0;
+    };
+    const seedHistory = () => {
+      history.length = 0;
+      redoHistory.length = 0;
+      const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      history.push(snapshot);
+      updateUndoRedoUI();
+    };
 
     const applyToolUI = () => {
       brushBtn.classList.toggle("active", tool === "brush");
@@ -841,6 +870,7 @@ function App() {
       sizeInput.value = size;
       canvas.style.cursor =
         tool === "select" || tool === "fill" ? "crosshair" : "crosshair";
+      clearWrap.classList.toggle("is-visible", tool === "eraser" && clearVisible);
       if (tool !== "select" && selection.active) {
         commitSelection();
       }
@@ -852,6 +882,9 @@ function App() {
       img.onload = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        baseCtx.clearRect(0, 0, canvas.width, canvas.height);
+        baseCtx.drawImage(canvas, 0, 0);
+        seedHistory();
       };
       img.src = dataUrl;
     };
@@ -1104,14 +1137,30 @@ function App() {
     canvas.addEventListener("mousemove", moveDraw);
     window.addEventListener("mouseup", stopDraw);
 
-    brushBtn.addEventListener("click", () => { tool = "brush"; applyToolUI(); });
-    eraserBtn.addEventListener("click", () => { tool = "eraser"; applyToolUI(); });
+    brushBtn.addEventListener("click", () => {
+      tool = "brush";
+      clearVisible = false;
+      applyToolUI();
+    });
+    eraserBtn.addEventListener("click", () => {
+      if (tool === "eraser") {
+        clearVisible = !clearVisible;
+      } else {
+        tool = "eraser";
+        clearVisible = false;
+      }
+      applyToolUI();
+    });
     selectBtn.addEventListener("click", () => { tool = "select"; applyToolUI(); });
-    fillBtn.addEventListener("click", () => { tool = "fill"; applyToolUI(); });
+    fillBtn.addEventListener("click", () => {
+      tool = "fill";
+      clearVisible = false;
+      applyToolUI();
+    });
     colorInput.addEventListener("input", (e) => { color = e.target.value; });
     sizeInput.addEventListener("input", (e) => { size = Number(e.target.value); applyToolUI(); });
     undoBtn.addEventListener("click", () => {
-      if (!history.length) return;
+      if (history.length <= 1) return;
       selection.active = false;
       selection.canvas = null;
       const snapshot = history.pop();
@@ -1121,6 +1170,7 @@ function App() {
       ctx.putImageData(snapshot, 0, 0);
       baseCtx.clearRect(0, 0, canvas.width, canvas.height);
       baseCtx.putImageData(snapshot, 0, 0);
+      updateUndoRedoUI();
     });
     redoBtn.addEventListener("click", () => {
       if (!redoHistory.length) return;
@@ -1133,6 +1183,15 @@ function App() {
       ctx.putImageData(snapshot, 0, 0);
       baseCtx.clearRect(0, 0, canvas.width, canvas.height);
       baseCtx.putImageData(snapshot, 0, 0);
+      updateUndoRedoUI();
+    });
+    clearBtn.addEventListener("click", () => {
+      selection.active = false;
+      selection.canvas = null;
+      pushHistory();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      baseCtx.clearRect(0, 0, canvas.width, canvas.height);
+      updateUndoRedoUI();
     });
 
     saveBtn.addEventListener("click", () => {
@@ -1152,6 +1211,7 @@ function App() {
 
     drawImage(state.dataUrl);
     applyToolUI();
+    updateUndoRedoUI();
 
     function pushHistory() {
       const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -1160,6 +1220,7 @@ function App() {
       if (history.length > maxHistory) {
         history.shift();
       }
+      updateUndoRedoUI();
     }
   </script>
 </body>
@@ -1192,6 +1253,14 @@ function App() {
       return;
     }
     setGeneratedDesigns((prev) => prev.filter((item) => item.id !== designId));
+  };
+
+  const clearDesignCanvas = () => {
+    const canvas = designCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
   const resetFilters = () => {
@@ -2694,23 +2763,52 @@ function App() {
                               className={`tool-btn ${
                                 designTool === "brush" ? "active" : ""
                               }`}
-                              onClick={() => setDesignTool("brush")}
+                              onClick={() => {
+                                setDesignTool("brush");
+                                setShowClearBubble(false);
+                              }}
                               aria-label="Brush"
                               title="Brush"
                             >
                               <Pencil size={16} strokeWidth={1.6} />
                             </button>
-                            <button
-                              type="button"
-                              className={`tool-btn ${
-                                designTool === "eraser" ? "active" : ""
-                              }`}
-                              onClick={() => setDesignTool("eraser")}
-                              aria-label="Eraser"
-                              title="Eraser"
-                            >
-                              <Eraser size={16} strokeWidth={1.6} />
-                            </button>
+                            <div className="tool-anchor">
+                              <button
+                                type="button"
+                                className={`tool-btn ${
+                                  designTool === "eraser" ? "active" : ""
+                                }`}
+                              onClick={() => {
+                                if (designTool === "eraser") {
+                                  setShowClearBubble((prev) => !prev);
+                                } else {
+                                  setDesignTool("eraser");
+                                  setShowClearBubble(false);
+                                }
+                              }}
+                                aria-label="Eraser"
+                                title="Eraser"
+                              >
+                                <Eraser size={16} strokeWidth={1.6} />
+                              </button>
+                              <div
+                                className={`tool-sub ${
+                                  designTool === "eraser" && showClearBubble
+                                    ? "is-visible"
+                                    : ""
+                                }`}
+                              >
+                                <div className="bubble">
+                                  <button
+                                    type="button"
+                                    className="clear-btn"
+                                    onClick={clearDesignCanvas}
+                                  >
+                                    모두 지우기
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           <label className="color-picker">
                             색상
@@ -3150,6 +3248,7 @@ function App() {
                                 strokeWidth="2"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
+                                className="follow-chart-line"
                               />
                             </svg>
                             <div className="follow-chart-x">

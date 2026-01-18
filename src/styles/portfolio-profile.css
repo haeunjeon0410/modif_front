@@ -108,6 +108,12 @@
   }
 }
 
+@keyframes follow-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .brand-list {
   display: flex;
   flex-direction: column;
@@ -349,6 +355,12 @@
   width: 100%;
   height: 120px;
   display: block;
+}
+
+.follow-chart-line {
+  stroke-dasharray: 420;
+  stroke-dashoffset: 420;
+  animation: follow-draw 0.7s ease forwards;
 }
 
 .follow-chart-x {
