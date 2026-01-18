@@ -134,6 +134,8 @@ function App() {
   const [commentMenuId, setCommentMenuId] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [designCategory, setDesignCategory] = useState("상의");
+  const [designLength, setDesignLength] = useState("미디");
+  const [designGender, setDesignGender] = useState("Unisex");
   const [designTool, setDesignTool] = useState("brush");
   const [designColor, setDesignColor] = useState("#111111");
   const [designSize, setDesignSize] = useState(6);
@@ -677,15 +679,24 @@ function App() {
       ctx.strokeStyle = designColor;
     }
     const rect = canvas.getBoundingClientRect();
-    const startX = event.clientX - rect.left;
-    const startY = event.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const startX = (event.clientX - rect.left) * scaleX;
+    const startY = (event.clientY - rect.top) * scaleY;
+    drawMetaRef.current.startX = startX;
+    drawMetaRef.current.startY = startY;
     ctx.beginPath();
     ctx.moveTo(startX, startY);
 
     const draw = (moveEvent) => {
       drawMetaRef.current.moved = true;
-      const x = moveEvent.clientX - rect.left;
-      const y = moveEvent.clientY - rect.top;
+      const x = (moveEvent.clientX - rect.left) * scaleX;
+      const y = (moveEvent.clientY - rect.top) * scaleY;
+      const dx = x - drawMetaRef.current.startX;
+      const dy = y - drawMetaRef.current.startY;
+      if (Math.hypot(dx, dy) < 3) {
+        return;
+      }
       ctx.lineTo(x, y);
       ctx.stroke();
     };
@@ -694,6 +705,9 @@ function App() {
       ctx.globalCompositeOperation = "source-over";
       window.removeEventListener("mousemove", draw);
       window.removeEventListener("mouseup", stop);
+      if (!drawMetaRef.current.moved && !isCanvasZoomOpen) {
+        openCanvasZoom();
+      }
     };
 
     window.addEventListener("mousemove", draw);
@@ -702,6 +716,10 @@ function App() {
 
   const openCanvasZoom = () => {
     setIsCanvasZoomOpen(true);
+  };
+
+  const cancelCanvasZoom = () => {
+    setIsCanvasZoomOpen(false);
   };
 
   const closeCanvasZoom = () => {
@@ -715,6 +733,17 @@ function App() {
       }
     }
     setIsCanvasZoomOpen(false);
+  };
+
+  const getCursorStyle = () => {
+    const size = Math.max(12, Math.round(designSize * 2));
+    const brushSize = size - 2;
+    const half = Math.round(size / 2);
+    const rectX = 1;
+    const rectY = 1;
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' shape-rendering='crispEdges'><rect x='${rectX}' y='${rectY}' width='${brushSize}' height='${brushSize}' fill='none' stroke='%23111111' stroke-width='1'/></svg>`;
+    const encoded = encodeURIComponent(svg);
+    return `url("data:image/svg+xml;utf8,${encoded}") ${half} ${half}, crosshair`;
   };
 
   const resetFilters = () => {
@@ -2145,216 +2174,331 @@ function App() {
 
         {activeTab === "studio" && (
           <section className="content">
-            <div className="page-title page-title-row">
-              <div>
-                <h1>Studio</h1>
-                <p>창작자의 작업실 - AI 디자인과 피팅 엔진을 생성합니다.</p>
-              </div>
-              <div className="page-title-actions">
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => setIsGalleryOpen(true)}
-                >
-                  Generated Gallery
-                </button>
-              </div>
-            </div>
-
-            <div className="studio-layout">
-              <div className="panel studio-workbench">
-                <div className="studio-workbench-header">
+            {isCanvasZoomOpen ? (
+              <div className="studio-canvas-page">
+                <div className="studio-canvas-header">
                   <div>
-                    <h3>디자인 워크벤치</h3>
-                    <p className="studio-sub">
-                      스케치와 프롬프트를 함께 사용해 AI 디자인을 생성합니다.
-                    </p>
+                    <h1>디자인 캔버스</h1>
+                    <p>드로잉 후 저장하면 워크벤치로 돌아갑니다.</p>
                   </div>
-                  <button
-                    className="primary"
-                    type="button"
-                    onClick={generateDesign}
-                  >
-                    AI 디자인 생성
-                  </button>
+                  <div className="studio-canvas-actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={cancelCanvasZoom}
+                    >
+                      돌아가기
+                    </button>
+                    <button
+                      type="button"
+                      className="primary"
+                      onClick={closeCanvasZoom}
+                    >
+                      저장
+                    </button>
+                  </div>
                 </div>
-                <div className="workbench-body">
-                  <div className="workbench-canvas">
-                    <div className="design-tabs">
-                      {["상의", "하의", "아우터", "원피스"].map((category) => (
-                        <button
-                          key={category}
-                          type="button"
-                          className={`pill ${
-                            designCategory === category ? "active" : ""
-                          }`}
-                          onClick={() => setDesignCategory(category)}
-                        >
-                          {category}
-                        </button>
-                      ))}
+                <div className="panel studio-canvas-panel">
+                  <div className="design-toolbar">
+                    <div className="tool-group">
+                      <button
+                        type="button"
+                        className={`tool-btn ${
+                          designTool === "brush" ? "active" : ""
+                        }`}
+                        onClick={() => setDesignTool("brush")}
+                        aria-label="Brush"
+                        title="Brush"
+                      >
+                        <Pencil size={16} strokeWidth={1.6} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`tool-btn ${
+                          designTool === "eraser" ? "active" : ""
+                        }`}
+                        onClick={() => setDesignTool("eraser")}
+                        aria-label="Eraser"
+                        title="Eraser"
+                      >
+                        <Eraser size={16} strokeWidth={1.6} />
+                      </button>
                     </div>
-                    <div className="design-toolbar">
-                      <div className="tool-group">
-                        <button
-                          type="button"
-                          className={`tool-btn ${
-                            designTool === "brush" ? "active" : ""
-                          }`}
-                          onClick={() => setDesignTool("brush")}
-                          aria-label="Brush"
-                          title="Brush"
-                        >
-                          <Pencil size={16} strokeWidth={1.6} />
-                        </button>
-                        <button
-                          type="button"
-                          className={`tool-btn ${
-                            designTool === "eraser" ? "active" : ""
-                          }`}
-                          onClick={() => setDesignTool("eraser")}
-                          aria-label="Eraser"
-                          title="Eraser"
-                        >
-                          <Eraser size={16} strokeWidth={1.6} />
-                        </button>
-                      </div>
-                      <div className="tool-group colors">
-                        {["#111111", "#d94848", "#2f6fed", "#f2b933"].map(
-                          (color) => (
-                            <button
-                              key={color}
-                              type="button"
-                              className={`color-btn ${
-                                designColor === color ? "active" : ""
-                              }`}
-                              style={{ background: color }}
-                              onClick={() => setDesignColor(color)}
-                              aria-label={`color ${color}`}
-                            />
-                          )
-                        )}
-                      </div>
-                      <label className="size-control">
-                        굵기
-                        <input
-                          type="range"
-                          min="2"
-                          max="14"
-                          value={designSize}
-                          onChange={(event) =>
-                            setDesignSize(Number(event.target.value))
-                          }
-                        />
-                      </label>
-                    </div>
-                    <div className="design-canvas-wrap">
-                      <canvas
-                        ref={designCanvasRef}
-                        className="design-canvas"
-                        width="720"
-                        height="420"
-                        onMouseDown={handleCanvasDraw}
-                        onClick={() => {
-                          if (!drawMetaRef.current.moved) {
-                            openCanvasZoom();
-                          }
-                        }}
-                        aria-label="Design canvas"
-                      />
-                      <p className="design-hint">
-                        {designCategory} 실루엣을 드로잉하세요. 클릭하면 확대됩니다.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="workbench-prompt">
-                    <label className="field">
-                      Design Prompt
-                      <textarea
-                        value={prompt}
-                        onChange={(event) => setPrompt(event.target.value)}
-                        placeholder="미니멀한 오버사이즈 코트, 대칭적인 라펠과 깊은 블랙 톤"
+                    <label className="color-picker">
+                      색상
+                      <input
+                        type="color"
+                        value={designColor}
+                        onChange={(event) =>
+                          setDesignColor(event.target.value)
+                        }
+                        aria-label="Brush color"
                       />
                     </label>
-                    <div className="subsection">
-                      <h4>Fabric Properties</h4>
-                      {["stretch", "weight", "stiffness"].map((key) => (
-                        <label key={key} className="slider">
-                          <span>{key}</span>
-                          <input
-                            type="range"
-                            min="1"
-                            max="10"
-                            value={fabric[key]}
-                            onChange={(event) =>
-                              setFabric((prev) => ({
-                                ...prev,
-                                [key]: Number(event.target.value),
-                              }))
-                            }
-                          />
-                          <span>{fabric[key]}/10</span>
-                        </label>
-                      ))}
-                    </div>
+                    <label className="size-control">
+                      굵기
+                      <input
+                        type="range"
+                        min="2"
+                        max="14"
+                        value={designSize}
+                        onChange={(event) =>
+                          setDesignSize(Number(event.target.value))
+                        }
+                      />
+                    </label>
                   </div>
+                  <canvas
+                    ref={zoomCanvasRef}
+                    className="design-canvas zoom"
+                    style={{ cursor: getCursorStyle() }}
+                    width="980"
+                    height="620"
+                    onMouseDown={handleCanvasDraw}
+                    aria-label="Zoomed design canvas"
+                  />
                 </div>
               </div>
+            ) : (
+              <>
+                <div className="page-title page-title-row">
+                  <div>
+                    <h1>Studio</h1>
+                    <p>창작자의 작업실 - AI 디자인과 피팅 엔진을 생성합니다.</p>
+                  </div>
+                  <div className="page-title-actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => setIsGalleryOpen(true)}
+                    >
+                      생성된 디자인
+                    </button>
+                  </div>
+                </div>
 
-              <div className="panel studio-lab">
-                <div className="subsection">
-                  <h4>마네킹 프리셋 테스트</h4>
-                  <div className="pill-group">
-                    {mannequins.map((mannequin) => (
+                <div className="studio-layout">
+                  <div className="panel studio-workbench">
+                    <div className="studio-workbench-header">
+                      <div>
+                        <h3>디자인 워크벤치</h3>
+                        <p className="studio-sub">
+                          스케치와 프롬프트를 함께 사용해 AI 디자인을 생성합니다.
+                        </p>
+                      </div>
                       <button
-                        key={mannequin.id}
+                        className="primary"
                         type="button"
-                        className={`pill ${
-                          selectedMannequin === mannequin.id ? "active" : ""
-                        }`}
-                        onClick={() => setSelectedMannequin(mannequin.id)}
+                        onClick={generateDesign}
                       >
-                        {mannequin.label}
+                        AI 디자인 생성
                       </button>
-                    ))}
+                    </div>
+                    <div className="workbench-body">
+                      <div className="workbench-canvas">
+                        <div className="design-toolbar">
+                          <div className="tool-group">
+                            <button
+                              type="button"
+                              className={`tool-btn ${
+                                designTool === "brush" ? "active" : ""
+                              }`}
+                              onClick={() => setDesignTool("brush")}
+                              aria-label="Brush"
+                              title="Brush"
+                            >
+                              <Pencil size={16} strokeWidth={1.6} />
+                            </button>
+                            <button
+                              type="button"
+                              className={`tool-btn ${
+                                designTool === "eraser" ? "active" : ""
+                              }`}
+                              onClick={() => setDesignTool("eraser")}
+                              aria-label="Eraser"
+                              title="Eraser"
+                            >
+                              <Eraser size={16} strokeWidth={1.6} />
+                            </button>
+                          </div>
+                          <label className="color-picker">
+                            색상
+                            <input
+                              type="color"
+                              value={designColor}
+                              onChange={(event) =>
+                                setDesignColor(event.target.value)
+                              }
+                              aria-label="Brush color"
+                            />
+                          </label>
+                          <label className="size-control">
+                            굵기
+                            <input
+                              type="range"
+                              min="2"
+                              max="14"
+                              value={designSize}
+                              onChange={(event) =>
+                                setDesignSize(Number(event.target.value))
+                              }
+                            />
+                          </label>
+                        </div>
+                        <div className="design-canvas-wrap">
+                          <canvas
+                            ref={designCanvasRef}
+                            className="design-canvas"
+                            style={{ cursor: getCursorStyle() }}
+                            width="720"
+                            height="420"
+                            onMouseDown={handleCanvasDraw}
+                            aria-label="Design canvas"
+                          />
+                          <p className="design-hint">
+                            {designCategory} 실루엣을 드로잉하세요. 클릭하면 전체
+                            화면으로 이동합니다.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="workbench-prompt">
+                        <div className="design-selects">
+                          <label className="field">
+                            옷 종류
+                            <select
+                              value={designCategory}
+                              onChange={(event) =>
+                                setDesignCategory(event.target.value)
+                              }
+                            >
+                              {["상의", "하의", "아우터", "원피스"].map((item) => (
+                                <option key={item} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="field">
+                            성별
+                            <select
+                              value={designGender}
+                              onChange={(event) =>
+                                setDesignGender(event.target.value)
+                              }
+                            >
+                              {["Unisex", "Woman", "Man"].map((item) => (
+                                <option key={item} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="field">
+                            기장
+                            <select
+                              value={designLength}
+                              onChange={(event) =>
+                                setDesignLength(event.target.value)
+                              }
+                            >
+                              {["크롭", "숏", "미디", "롱"].map((item) => (
+                                <option key={item} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                        <div className="subsection">
+                          <h4>Fabric Properties</h4>
+                          {["stretch", "weight", "stiffness"].map((key) => (
+                            <label key={key} className="slider">
+                              <span>{key}</span>
+                              <input
+                                type="range"
+                                min="1"
+                                max="10"
+                                value={fabric[key]}
+                                onChange={(event) =>
+                                  setFabric((prev) => ({
+                                    ...prev,
+                                    [key]: Number(event.target.value),
+                                  }))
+                                }
+                              />
+                              <span>{fabric[key]}/10</span>
+                            </label>
+                          ))}
+                        </div>
+                        <label className="field">
+                          Design Prompt
+                          <textarea
+                            value={prompt}
+                            onChange={(event) => setPrompt(event.target.value)}
+                            placeholder="미니멀한 오버사이즈 코트, 대칭적인 라펠과 깊은 블랙 톤"
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                  <div className="mannequin-card">
-                    <div className="mannequin-avatar" />
-                    <div>
-                      <strong>
-                        {
-                          mannequins.find(
-                            (item) => item.id === selectedMannequin
-                          )?.label
-                        }
-                      </strong>
+
+                  <div className="panel studio-lab">
+                    <div className="subsection">
+                      <h4>마네킹 프리셋 테스트</h4>
+                      <div className="pill-group">
+                        {mannequins.map((mannequin) => (
+                          <button
+                            key={mannequin.id}
+                            type="button"
+                            className={`pill ${
+                              selectedMannequin === mannequin.id ? "active" : ""
+                            }`}
+                            onClick={() => setSelectedMannequin(mannequin.id)}
+                          >
+                            {mannequin.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mannequin-card">
+                        <div className="mannequin-avatar" />
+                        <div>
+                          <strong>
+                            {
+                              mannequins.find(
+                                (item) => item.id === selectedMannequin
+                              )?.label
+                            }
+                          </strong>
+                          <p>
+                            {
+                              mannequins.find(
+                                (item) => item.id === selectedMannequin
+                              )?.desc
+                            }
+                          </p>
+                          <p>Layer Order: Base → Mid → Outer</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="subsection">
+                      <h4>브랜드 런칭</h4>
                       <p>
-                        {
-                          mannequins.find(
-                            (item) => item.id === selectedMannequin
-                          )?.desc
-                        }
+                        현재 디자인 수:{" "}
+                        <strong>{brand.clothes_count} / 10</strong>
                       </p>
-                      <p>Layer Order: Base → Mid → Outer</p>
+                      <button
+                        className="secondary"
+                        type="button"
+                        onClick={handleLaunch}
+                      >
+                        Discover로 전송
+                      </button>
+                      {studioNotice && <p className="notice">{studioNotice}</p>}
                     </div>
                   </div>
                 </div>
-                <div className="subsection">
-                  <h4>브랜드 런칭</h4>
-                  <p>
-                    현재 디자인 수: <strong>{brand.clothes_count} / 10</strong>
-                  </p>
-                  <button
-                    className="secondary"
-                    type="button"
-                    onClick={handleLaunch}
-                  >
-                    Discover로 전송
-                  </button>
-                  {studioNotice && <p className="notice">{studioNotice}</p>}
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </section>
         )}
 
@@ -3221,36 +3365,6 @@ function App() {
                 로그인
               </button>
             </div>
-          </div>
-        </div>
-      )}
-      {isCanvasZoomOpen && (
-        <div
-          className="studio-zoom-modal"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeCanvasZoom}
-        >
-          <div
-            className="studio-zoom-content"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="auth-modal-close"
-              aria-label="Close"
-              onClick={closeCanvasZoom}
-            >
-              ×
-            </button>
-            <canvas
-              ref={zoomCanvasRef}
-              className="design-canvas zoom"
-              width="980"
-              height="620"
-              onMouseDown={handleCanvasDraw}
-              aria-label="Zoomed design canvas"
-            />
           </div>
         </div>
       )}
