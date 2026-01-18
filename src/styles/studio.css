@@ -32,6 +32,45 @@
   justify-content: center;
 }
 
+.design-coin {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  font-size: 12px;
+  color: #111111;
+}
+
+.design-coin-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #111111;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+}
+
+.design-coin-brush {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.design-coin-count {
+  font-weight: 600;
+}
+
+.temp-save-btn {
+  padding: 6px 12px;
+  min-width: auto;
+  font-size: 12px;
+  border-radius: 999px;
+}
+
 .studio-workbench-header h3 {
   margin: 0;
 }
@@ -45,7 +84,7 @@
 .studio-workbench .workbench-body {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 16px;
+  gap: 6px;
 }
 .studio-workbench .workbench-canvas {
   display: flex;
@@ -206,6 +245,10 @@
   flex-direction: column;
   gap: 20px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+}
+
+.studio-workbench.panel {
+  padding: 26px;
 }
 
 .field {

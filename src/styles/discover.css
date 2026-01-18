@@ -436,7 +436,7 @@ button.primary,
 button.secondary,
 button.ghost {
   border-radius: 999px;
-  padding: 12px 18px;
+  padding: 7px 14px;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;

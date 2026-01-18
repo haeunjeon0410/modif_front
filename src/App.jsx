@@ -85,6 +85,10 @@ function App() {
     open: false,
     design: null,
   });
+  const [designCoins, setDesignCoins] = useState(6);
+  const [designCoinModal, setDesignCoinModal] = useState(false);
+  const [designCoinAlertOpen, setDesignCoinAlertOpen] = useState(false);
+  const [alreadyFundedAlertOpen, setAlreadyFundedAlertOpen] = useState(false);
   const [aiDesignEditMode, setAiDesignEditMode] = useState(false);
   const [aiDesignDraft, setAiDesignDraft] = useState({
     name: "",
@@ -443,6 +447,9 @@ function App() {
   }, [clothing]);
 
   const generateDesign = () => {
+    if (designCoins <= 0) {
+      return;
+    }
     const trimmed = prompt.trim();
     const nextId = Math.max(...clothing.map((item) => item.id), 0) + 1;
     const nextImage = `/image${
@@ -469,6 +476,7 @@ function App() {
     setGeneratedDesigns((prev) => [newDesign, ...prev]);
     setBrand((prev) => ({ ...prev, clothes_count: prev.clothes_count + 1 }));
     setPrompt("");
+    setDesignCoins((prev) => Math.max(0, prev - 1));
     setDetailTab("overview");
     setAiDesignDraft({
       name: newDesign.name,
@@ -631,6 +639,12 @@ function App() {
     );
   };
 
+  const designCoinPackages = [
+    { id: "starter", label: "Starter 5", amount: 5, price: 1900 },
+    { id: "plus", label: "Plus 15", amount: 15, price: 4900 },
+    { id: "pro", label: "Pro 30", amount: 30, price: 8900 },
+  ];
+
   const submitComment = () => {
     const trimmed = commentDraft.text.trim();
     if (!detailItem?.clothing?.id || !trimmed) return;
@@ -672,6 +686,35 @@ function App() {
         100,
       )
     : 0;
+
+  const handleFundNow = () => {
+    if (!detailItem?.clothing?.id || !detailItem?.funding?.brand) return;
+    const alreadyFunded = investments.some(
+      (item) =>
+        item.brand === detailItem.funding.brand &&
+        item.itemName === detailItem.clothing.name,
+    );
+    if (alreadyFunded) {
+      setAlreadyFundedAlertOpen(true);
+      setActiveTab("portfolio");
+      setPortfolioTab("investor");
+      return;
+    }
+    const nextId = Math.max(0, ...investments.map((item) => item.id)) + 1;
+    const eta = formatDate(new Date(Date.now() + 1000 * 60 * 60 * 24 * 30));
+    const nextItem = {
+      id: nextId,
+      brand: detailItem.funding.brand,
+      itemName: detailItem.clothing.name,
+      image: detailItem.clothing.design_img_url,
+      amount: detailItem.clothing.price || 0,
+      status: "Funding",
+      eta,
+    };
+    setInvestments((prev) => [nextItem, ...prev]);
+    setActiveTab("portfolio");
+    setPortfolioTab("investor");
+  };
 
   const myBrandProfile = useMemo(
     () => ({
@@ -1627,17 +1670,30 @@ function App() {
   if (onboardingOpen) {
     return (
       <div className="onboarding-page">
-        <button
-          type="button"
-          className="onboarding-back"
-          onClick={() => {
-            setOnboardingOpen(false);
-            setIntroOpen(true);
-            resetOnboarding();
-          }}
-        >
-          돌아가기
-        </button>
+        <div className="onboarding-actions">
+          <button
+            type="button"
+            className="onboarding-back"
+            onClick={() => {
+              setOnboardingOpen(false);
+              setIntroOpen(true);
+              resetOnboarding();
+            }}
+          >
+            돌아가기
+          </button>
+          <button
+            type="button"
+            className="onboarding-login"
+            onClick={() => {
+              setOnboardingOpen(false);
+              setIntroOpen(false);
+              openAuthModal("login-required");
+            }}
+          >
+            로그인
+          </button>
+        </div>
         <video
           className="onboarding-video"
           src="/background.mp4"
@@ -1672,14 +1728,37 @@ function App() {
                           accept="image/*"
                           onChange={handleProfilePhotoChange}
                         />
-                        <div className="profile-icon">
-                          {signupDraft.base_photo_url ? (
+                        {signupDraft.base_photo_url && (
+                          <button
+                            type="button"
+                            className="profile-remove"
+                            aria-label="Remove profile photo"
+                            onClick={() =>
+                              setSignupDraft((prev) => ({
+                                ...prev,
+                                base_photo_url: null,
+                              }))
+                            }
+                          >
+                            ×
+                          </button>
+                        )}
+                        <div
+                          className={`profile-icon ${
+                            signupDraft.base_photo_url ? "has-photo" : ""
+                          }`}
+                        >
+                          {/* 1. 항상 'profile' 글자를 배경에 깔아둡니다 */}
+                          <span className="profile-text">profile</span>
+
+                          {/* 2. 이미지가 있으면 그 위에 덮어씌웁니다 */}
+                          {signupDraft.base_photo_url && (
                             <img
                               src={signupDraft.base_photo_url}
                               alt="Profile"
+                              /* ✨ 핵심: 이미지가 깨지면(에러나면) 스스로를 숨겨서 뒤에 있는 글자가 보이게 함 */
+                              onError={(e) => (e.target.style.display = "none")}
                             />
-                          ) : (
-                            <div className="avatar-placeholder">👤</div>
                           )}
                         </div>
                       </div>
@@ -1768,55 +1847,69 @@ function App() {
                     </div>
                     <div className="measurement-container">
                       {measurementMode === "ai" ? (
-  <div className="ai-measure-panel">
-    <div className="ai-upload">
-      <div className="ai-upload-text">
-        <strong>전신 사진 업로드</strong>
-        <span>
-          {/* ✨ 파일명이 있으면 파일명을, 없으면 안내 문구를 표시 */}
-          {aiFileName ? aiFileName : "정면 전신 사진 1장을 업로드하면 AI가 자동으로 치수를 계산합니다."}
-        </span>
-      </div>
-      <label className="ai-upload-btn">
-        <svg
-          className="ai-upload-icon"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path
-            d="M4 7h3l2-2h6l2 2h3v12H4z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-          />
-          <circle
-            cx="12"
-            cy="13"
-            r="3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-          />
-        </svg>
-        <input 
-          type="file" 
-          accept="image/*" 
-          onChange={(e) => {
-            const file = e.target.files[0];
-            if (file) {
-              setAiFileName(file.name); // ✨ 선택된 파일 이름 저장
-              // (필요하다면 여기에 이미지 처리 로직 추가)
-            }
-          }}
-        />
-      </label>
-    </div>
-    {/* .ai-hint div는 base.css에서 숨겼으므로 코드는 그대로 둬도 안 보입니다 */}
-    <div className="ai-hint">
-      밝은 배경에서 정면 자세로 촬영된 이미지를 권장합니다.
-    </div>
-  </div>
+                        <div className="ai-measure-panel">
+                          <div className="ai-upload">
+                            <div className="ai-upload-text">
+                              <strong>전신 사진 업로드</strong>
+                              <span>
+                                {aiFileName ? (
+                                  <span className="ai-file-name">
+                                    {aiFileName}
+                                    <button
+                                      type="button"
+                                      className="ai-file-remove"
+                                      aria-label="Remove uploaded photo"
+                                      onClick={() => setAiFileName(null)}
+                                    >
+                                      ?
+                                    </button>
+                                  </span>
+                                ) : (
+                                  "?? ?? ?? 1?? ??? AI? ?? ??? ???."
+                                )}
+                              </span>
+                            </div>
+                            <label className="ai-upload-btn">
+                              <svg
+                                className="ai-upload-icon"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d="M4 7h3l2-2h6l2 2h3v12H4z"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.6"
+                                  strokeLinejoin="round"
+                                />
+                                <circle
+                                  cx="12"
+                                  cy="13"
+                                  r="3.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.6"
+                                />
+                              </svg>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    setAiFileName(file.name); // ✨ 선택된 파일 이름 저장
+                                    // (필요하다면 여기에 이미지 처리 로직 추가)
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                          {/* .ai-hint div는 base.css에서 숨겼으므로 코드는 그대로 둬도 안 보입니다 */}
+                          <div className="ai-hint">
+                            밝은 배경에서 정면 자세로 촬영된 이미지를
+                            권장합니다.
+                          </div>
+                        </div>
                       ) : (
                         <div className="onboarding-measurements">
                           {signupMeasurementFields.map((field) => (
@@ -2363,22 +2456,27 @@ function App() {
                 {filterOpen && (
                   <div className="filter-panel">
                     <label className="filter-field">
-                      Gender
+                      성별
                       <select
                         value={selectedGender}
                         onChange={(event) =>
                           setSelectedGender(event.target.value)
                         }
                       >
-                        {["All", "Mens", "Womens", "Unisex"].map((option) => (
-                          <option key={option} value={option}>
-                            {option}
+                        {[
+                          { value: "All", label: "전체" },
+                          { value: "Mens", label: "??" },
+                          { value: "Womens", label: "??" },
+                          { value: "Unisex", label: "??" },
+                        ].map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
                           </option>
                         ))}
                       </select>
                     </label>
                     <label className="filter-field">
-                      Style
+                      스타일
                       <select
                         value={selectedStyle}
                         onChange={(event) =>
@@ -2386,15 +2484,15 @@ function App() {
                         }
                       >
                         {[
-                          "All",
-                          "Minimal",
-                          "Street",
-                          "Classic",
-                          "Sport",
-                          "Romantic",
+                          { value: "All", label: "전체" },
+                          { value: "Minimal", label: "미니멀" },
+                          { value: "Street", label: "스트릿" },
+                          { value: "Classic", label: "클래식" },
+                          { value: "Sport", label: "스포티" },
+                          { value: "Romantic", label: "로맨틱" },
                         ].map((option) => (
-                          <option key={option} value={option}>
-                            {option}
+                          <option key={option.value} value={option.value}>
+                            {option.label}
                           </option>
                         ))}
                       </select>
@@ -2566,6 +2664,13 @@ function App() {
                                   )}
                                 </strong>
                               </div>
+                              <button
+                                type="button"
+                                className="primary detail-fund-btn"
+                                onClick={handleFundNow}
+                              >
+                                펀딩하기
+                              </button>
                               <div className="price-like-row">
                                 <button
                                   type="button"
@@ -2608,7 +2713,7 @@ function App() {
                             <div className="spec-bar">
                               {[
                                 { label: "신축성", value: fabric.stretch },
-                                { label: "무게감", value: fabric.weight },
+                                { label: "두께감", value: fabric.weight },
                                 { label: "탄탄함", value: fabric.stiffness },
                               ].map((item) => (
                                 <div className="spec-bar-row" key={item.label}>
@@ -2853,7 +2958,7 @@ function App() {
                   className="secondary"
                   onClick={() => setIsGalleryOpen(true)}
                 >
-                  생성된 디자인
+                  저장된 디자인
                 </button>
               </div>
             </div>
@@ -2869,16 +2974,48 @@ function App() {
                   </div>
                   <div className="studio-workbench-actions">
                     <button
-                      className="secondary"
                       type="button"
-                      onClick={saveTempDesign}
+                      className="design-coin"
+                      onClick={() => setDesignCoinModal(true)}
                     >
-                      임시 저장
+                      <span className="design-coin-icon" aria-hidden="true">
+                        <svg
+                          className="design-coin-brush"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 20c2.2 0 4-1.8 4-4 0-1.1.9-2 2-2h4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M12 4l8 8-6 6-8-8z"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M10 6l8 8"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+                      <span className="design-coin-count">{designCoins}</span>
                     </button>
                     <button
                       className="primary"
                       type="button"
                       onClick={generateDesign}
+                      disabled={designCoins <= 0}
                     >
                       디자인 생성
                     </button>
@@ -2963,6 +3100,13 @@ function App() {
                           }
                         />
                       </label>
+                      <button
+                        className="secondary temp-save-btn"
+                        type="button"
+                        onClick={saveTempDesign}
+                      >
+                        임시 저장
+                      </button>
                     </div>
                     <div className="design-canvas-wrap">
                       <canvas
@@ -2983,16 +3127,20 @@ function App() {
                   <div className="workbench-prompt">
                     <div className="design-selects">
                       <label className="field">
-                        성별
+                        ??
                         <select
                           value={designGender}
                           onChange={(event) =>
                             setDesignGender(event.target.value)
                           }
                         >
-                          {["Mens", "Womens", "Unisex"].map((item) => (
-                            <option key={item} value={item}>
-                              {item}
+                          {[
+                            { value: "Mens", label: "??" },
+                            { value: "Womens", label: "??" },
+                            { value: "Unisex", label: "??" },
+                          ].map((item) => (
+                            <option key={item.value} value={item.value}>
+                              {item.label}
                             </option>
                           ))}
                         </select>
@@ -3040,8 +3188,8 @@ function App() {
                       </label>
                     </div>
                     <div className="subsection">
-                      <h4>Fabric Properties</h4>
-                      {["stretch", "weight", "stiffness"].map((key) => (
+                      <h4>원단 특성</h4>
+                      {["신축성", "두께감", "탄탄함"].map((key) => (
                         <label key={key} className="slider">
                           <span>{key}</span>
                           <input
@@ -3737,6 +3885,40 @@ function App() {
                   <div className="profile-actions">
                     <button
                       type="button"
+                      className="profile-coin"
+                      onClick={() => setDesignCoinModal(true)}
+                    >
+                      <span className="profile-coin-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path
+                            d="M4 20c2.2 0 4-1.8 4-4 0-1.1.9-2 2-2h4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M12 4l8 8-6 6-8-8z"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M10 6l8 8"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+                      <span>{designCoins}</span>
+                    </button>
+                    <button
+                      type="button"
                       className="secondary"
                       onClick={() => setIsProfileEditing((prev) => !prev)}
                     >
@@ -3834,8 +4016,6 @@ function App() {
                 <div className="meta">
                   <span>Updated: {userProfile.updatedAt}</span>
                 </div>
-
-
               </div>
             </div>
           </section>
@@ -4034,7 +4214,7 @@ function App() {
                   <div>
                     <strong>{item.brand}</strong>
                     <p>
-                      참여 {item.participantCount}명 · \
+                      참여 {item.participantCount}명 · ₩
                       {currency.format(item.currentCoin)}
                     </p>
                   </div>
@@ -4071,7 +4251,7 @@ function App() {
               ×
             </button>
             <h3>펀딩을 취소할까요?</h3>
-            <p>취소 후에는 다시 참여해야 합니다.</p>
+            <p>취소 시 이 작업은 되돌릴 수 없습니다.</p>
             <div className="auth-modal-actions">
               <button
                 type="button"
@@ -4153,9 +4333,7 @@ function App() {
                       <button
                         key={tab}
                         type="button"
-                        className={`pill ${
-                          detailTab === tab ? "active" : ""
-                        }`}
+                        className={`pill ${detailTab === tab ? "active" : ""}`}
                         onClick={() => setDetailTab(tab)}
                       >
                         {tab === "overview" && "Overview"}
@@ -4314,6 +4492,95 @@ function App() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {designCoinModal && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content design-coin-modal">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={() => setDesignCoinModal(false)}
+            >
+              ×
+            </button>
+            <h3>디자인 토큰 구매</h3>
+            <p>디자인 생성에 필요한 토큰을 충전하세요.</p>
+            <div className="design-coin-balance">
+              보유 토큰 <strong>{designCoins}</strong>
+            </div>
+            <div className="design-coin-grid">
+              {designCoinPackages.map((pack) => (
+                <div key={pack.id} className="design-coin-card">
+                  <div>
+                    <strong>{pack.label}</strong>
+                    <span>{pack.amount} 토큰</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => {
+                      setDesignCoins((prev) => prev + pack.amount);
+                      setDesignCoinAlertOpen(true);
+                    }}
+                  >
+                    {currency.format(pack.price)} 구입
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {designCoinAlertOpen && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content design-coin-modal">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={() => setDesignCoinAlertOpen(false)}
+            >
+              ×
+            </button>
+            <h3>토큰이 구매되었습니다.</h3>
+            <p>디자인 토큰이 충전되었습니다.</p>
+            <div className="auth-modal-actions">
+              <button
+                type="button"
+                className="primary"
+                onClick={() => setDesignCoinAlertOpen(false)}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {alreadyFundedAlertOpen && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content design-coin-modal">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={() => setAlreadyFundedAlertOpen(false)}
+            >
+              ×
+            </button>
+            <h3>이미 펀딩한 옷입니다.</h3>
+            <p>해당 아이템은 이미 포트폴리오에 추가되어 있습니다.</p>
+            <div className="auth-modal-actions">
+              <button
+                type="button"
+                className="primary"
+                onClick={() => setAlreadyFundedAlertOpen(false)}
+              >
+                확인
+              </button>
             </div>
           </div>
         </div>
