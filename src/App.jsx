@@ -1,5 +1,10 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Route, Routes } from "react-router-dom";
 import "./App.css";
+import MyFitting from "./pages/MyFitting";
+import { Canvas } from "@react-three/fiber";
+import { Center, Environment, OrbitControls } from "@react-three/drei";
+import Tshirt from "./Tshirt";
 import {
   initialClothing,
   initialFunding,
@@ -52,8 +57,7 @@ function App() {
     is_public: false,
   });
   const [generatedDesigns, setGeneratedDesigns] = useState([]);
-  const [fittingLayers, setFittingLayers] = useState([1, 2]);
-  const pixelRatio = 1;
+  const [fittingLayers, setFittingLayers] = useState([]);
   const [focusClothingId, setFocusClothingId] = useState(null);
   const [isComposing, setIsComposing] = useState(false);
   const [userProfile, setUserProfile] = useState(userBase);
@@ -70,7 +74,26 @@ function App() {
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [brandEditing, setBrandEditing] = useState(false);
   const [portfolioListOpen, setPortfolioListOpen] = useState(null);
+  const [brandFundingOpen, setBrandFundingOpen] = useState(false);
   const [authModal, setAuthModal] = useState({ open: false, mode: null });
+  const [cancelFundingModal, setCancelFundingModal] = useState({
+    open: false,
+    investmentId: null,
+  });
+  const [aiDesignModal, setAiDesignModal] = useState({
+    open: false,
+    design: null,
+  });
+  const [aiDesignEditMode, setAiDesignEditMode] = useState(false);
+  const [aiDesignDraft, setAiDesignDraft] = useState({
+    name: "",
+    price: 0,
+    category: "",
+    style: "",
+    gender: "",
+    description: "",
+    story: "",
+  });
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginDraft, setLoginDraft] = useState({ handle: "", password: "" });
   const [myBrandDetails, setMyBrandDetails] = useState({
@@ -214,10 +237,10 @@ function App() {
 
   const designLengthOptions = useMemo(
     () => ({
-      상의: ["민소매", "숏", "미디", "롱"],
+      상의: ["민소매", "숏", "미디엄", "롱"],
       하의: ["숏", "하프", "롱"],
       아우터: ["크롭", "숏", "하프", "롱"],
-      원d피스: ["미니", "미디", "롱"],
+      원피스: ["미니", "미디엄", "롱"],
     }),
     [],
   );
@@ -434,12 +457,71 @@ function App() {
       price: 169000,
       size_specs: { shoulder: 44, chest: 98, waist: 82 },
       design_prompt: trimmed || "미니멀 테일러링 실루엣",
+      description:
+        trimmed ||
+        "AI가 생성한 컨셉을 기반으로 실루엣과 소재 밸런스를 설계했습니다.",
+      story:
+        "AI가 트렌드 데이터를 분석해 감각적인 컬렉션 스토리를 구성했습니다. 디자이너가 세부 디테일을 다듬을 수 있도록 여지를 남겨두었습니다.",
     };
 
     setClothing((prev) => [...prev, newDesign]);
     setGeneratedDesigns((prev) => [newDesign, ...prev]);
     setBrand((prev) => ({ ...prev, clothes_count: prev.clothes_count + 1 }));
     setPrompt("");
+    setDetailTab("overview");
+    setAiDesignDraft({
+      name: newDesign.name,
+      price: newDesign.price,
+      category: newDesign.category,
+      style: newDesign.style,
+      gender: newDesign.gender,
+      description: newDesign.description || "",
+      story: newDesign.story || "",
+    });
+    setAiDesignEditMode(false);
+    setAiDesignModal({ open: true, design: newDesign });
+  };
+
+  const handleAiDesignEditToggle = () => {
+    if (!aiDesignModal.design) return;
+    if (aiDesignEditMode) {
+      const nextDesign = {
+        ...aiDesignModal.design,
+        name: aiDesignDraft.name.trim() || aiDesignModal.design.name,
+        price: Number(aiDesignDraft.price) || 0,
+        category:
+          aiDesignDraft.category.trim() || aiDesignModal.design.category,
+        style: aiDesignDraft.style.trim() || aiDesignModal.design.style,
+        gender: aiDesignDraft.gender.trim() || aiDesignModal.design.gender,
+        description:
+          aiDesignDraft.description.trim() ||
+          aiDesignModal.design.description,
+        story: aiDesignDraft.story.trim() || aiDesignModal.design.story,
+      };
+      setAiDesignModal((prev) => ({ ...prev, design: nextDesign }));
+      setClothing((prev) =>
+        prev.map((item) =>
+          item.id === nextDesign.id ? { ...item, ...nextDesign } : item,
+        ),
+      );
+      setGeneratedDesigns((prev) =>
+        prev.map((item) =>
+          item.id === nextDesign.id ? { ...item, ...nextDesign } : item,
+        ),
+      );
+      setAiDesignEditMode(false);
+      return;
+    }
+    setAiDesignDraft({
+      name: aiDesignModal.design.name || "",
+      price: aiDesignModal.design.price || 0,
+      category: aiDesignModal.design.category || "",
+      style: aiDesignModal.design.style || "",
+      gender: aiDesignModal.design.gender || "",
+      description: aiDesignModal.design.description || "",
+      story: aiDesignModal.design.story || "",
+    });
+    setAiDesignEditMode(true);
   };
 
   const handleTryOn = (clothingId) => {
@@ -1308,6 +1390,10 @@ function App() {
     setLoginModalOpen(false);
   };
 
+  const closeCancelFundingModal = () => {
+    setCancelFundingModal({ open: false, investmentId: null });
+  };
+
   const submitLogin = () => {
     if (!loginDraft.handle.trim() || !loginDraft.password.trim()) return;
     setIsLoggedIn(true);
@@ -1457,10 +1543,10 @@ function App() {
 
     sections.forEach((section) => observer.observe(section));
 
-      return () => {
-        observer.disconnect();
-      };
-    }, [introOpen]);
+    return () => {
+      observer.disconnect();
+    };
+  }, [introOpen]);
 
   const openClothingDetail = (clothingId) => {
     const funding = fundings.find((entry) => entry.clothing_id === clothingId);
@@ -1540,6 +1626,17 @@ function App() {
   if (onboardingOpen) {
     return (
       <div className="onboarding-page">
+        <button
+          type="button"
+          className="onboarding-back"
+          onClick={() => {
+            setOnboardingOpen(false);
+            setIntroOpen(true);
+            resetOnboarding();
+          }}
+        >
+          돌아가기
+        </button>
         <video
           className="onboarding-video"
           src="/background.mp4"
@@ -1786,7 +1883,7 @@ function App() {
     );
   }
 
-  return (
+  const appContent = (
     <div
       className={`app ${sidebarOpen ? "" : "sidebar-collapsed"} ${
         darkMode ? "dark" : ""
@@ -1838,9 +1935,7 @@ function App() {
                   style={{ "--delay": "360ms" }}
                 >
                   <span className="intro-keyword">Fit</span>
-                  <h3 className="intro-heading">
-                    미리 입어보는 가상 피팅
-                  </h3>
+                  <h3 className="intro-heading">미리 입어보는 가상 피팅</h3>
                   <p className="intro-desc">
                     옷을 직접 레이어링 해보며
                     <br />
@@ -2300,12 +2395,18 @@ function App() {
                     key={item.id}
                     style={{ animationDelay: `${index * 70}ms` }}
                   >
-                    <button
-                      type="button"
+                    <div
                       className="card-media"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
-                        setDetailItem({ funding: item, clothing: cloth });
-                        setDetailTab("overview");
+                        openClothingDetail(cloth.id);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openClothingDetail(cloth.id);
+                        }
                       }}
                     >
                       <img src={cloth?.design_img_url} alt={cloth?.name} />
@@ -2323,7 +2424,7 @@ function App() {
                         </button>
                       </div>
                       <div className="card-overlay" aria-hidden="true"></div>
-                    </button>
+                    </div>
                     <div className="card-body">
                       <div className="card-title">
                         <div className="card-title-row">
@@ -2369,7 +2470,9 @@ function App() {
                 <div className="modal-content">
                   <button
                     className="close"
-                    onClick={() => setDetailItem(null)}
+                    onClick={() => {
+                      setDetailItem(null);
+                    }}
                     type="button"
                   >
                     ×
@@ -2450,8 +2553,8 @@ function App() {
                             </div>
                             <h4>옷 세부내용</h4>
                             <p>
-                              {detailItem.clothing?.name}은(는) 절제된 실루엣과
-                              깔끔한 마감으로 일상과 포멀 모두에 어울립니다.
+                              {detailItem.clothing?.description ||
+                                `${detailItem.clothing?.name}은(는) 절제된 실루엣과 깔끔한 마감으로 일상과 포멀 모두에 어울립니다.`}
                             </p>
                             <div className="spec-grid">
                               <div>
@@ -2497,11 +2600,8 @@ function App() {
                           <div className="detail-block">
                             <h4>브랜드 스토리</h4>
                             <p>
-                              {detailItem.funding.brand}는 장인 정신과 데이터
-                              기반 디자인을 결합해 지속 가능한 컬렉션을
-                              선보입니다. 이번 라인업은 도시적인 실루엣과 실용적
-                              디테일을 강조하며, 고객 피드백을 빠르게 반영하는
-                              것을 목표로 합니다.
+                              {detailItem.clothing?.story ||
+                                `${detailItem.funding.brand}는 장인 정신과 데이터 기반 디자인을 결합해 지속 가능한 컬렉션을 선보입니다. 이번 라인업은 도시적인 실루엣과 실용적 디테일을 강조하며, 고객 피드백을 빠르게 반영하는 것을 목표로 합니다.`}
                             </p>
                             <div className="story-meta">
                               <div className="story-row">
@@ -2584,7 +2684,6 @@ function App() {
                                                 </span>
                                               )}
                                           </div>
-                                          
                                         </div>
                                         <span>{comment.text}</span>
                                       </div>
@@ -2713,238 +2812,235 @@ function App() {
         {activeTab === "studio" && (
           <section className="content">
             <div className="page-title page-title-row">
+              <div>
+                <h1>Studio</h1>
+                <p>상상이 현실이 되는 크리에이티브 공간</p>
+              </div>
+              <div className="page-title-actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setIsGalleryOpen(true)}
+                >
+                  생성된 디자인
+                </button>
+              </div>
+            </div>
+
+            <div className="studio-layout">
+              <div className="panel studio-workbench">
+                <div className="studio-workbench-header">
                   <div>
-                    <h1>Studio</h1>
-                    <p>상상이 현실이 되는 크리에이티브 공간</p>
+                    <h3>디자인 워크벤치</h3>
+                    <p className="studio-sub">
+                      스케치와 프롬프트를 함께 사용해 AI 디자인을 생성합니다.
+                    </p>
                   </div>
-                  <div className="page-title-actions">
+                  <div className="studio-workbench-actions">
                     <button
-                      type="button"
                       className="secondary"
-                      onClick={() => setIsGalleryOpen(true)}
+                      type="button"
+                      onClick={saveTempDesign}
                     >
-                      생성된 디자인
+                      임시 저장
+                    </button>
+                    <button
+                      className="primary"
+                      type="button"
+                      onClick={generateDesign}
+                    >
+                      디자인 생성
                     </button>
                   </div>
                 </div>
-
-                <div className="studio-layout">
-                  <div className="panel studio-workbench">
-                    <div className="studio-workbench-header">
-                      <div>
-                        <h3>디자인 워크벤치</h3>
-                        <p className="studio-sub">
-                          스케치와 프롬프트를 함께 사용해 AI 디자인을
-                          생성합니다.
-                        </p>
-                      </div>
-                      <div className="studio-workbench-actions">
+                <div className="workbench-body">
+                  <div className="workbench-canvas">
+                    <div className="design-toolbar">
+                      <div className="tool-group">
                         <button
-                          className="secondary"
                           type="button"
-                          onClick={saveTempDesign}
+                          className={`tool-btn ${
+                            designTool === "brush" ? "active" : ""
+                          }`}
+                          onClick={() => {
+                            setDesignTool("brush");
+                            setShowClearBubble(false);
+                          }}
+                          aria-label="Brush"
+                          title="Brush"
                         >
-                          임시 저장
+                          <Pencil size={16} strokeWidth={1.6} />
                         </button>
-                        <button
-                          className="primary"
-                          type="button"
-                          onClick={generateDesign}
-                        >
-                          디자인 생성
-                        </button>
-                      </div>
-                    </div>
-                    <div className="workbench-body">
-                      <div className="workbench-canvas">
-                        <div className="design-toolbar">
-                          <div className="tool-group">
-                            <button
-                              type="button"
-                              className={`tool-btn ${
-                                designTool === "brush" ? "active" : ""
-                              }`}
-                              onClick={() => {
-                                setDesignTool("brush");
+                        <div className="tool-anchor">
+                          <button
+                            type="button"
+                            className={`tool-btn ${
+                              designTool === "eraser" ? "active" : ""
+                            }`}
+                            onClick={() => {
+                              if (designTool === "eraser") {
+                                setShowClearBubble((prev) => !prev);
+                              } else {
+                                setDesignTool("eraser");
                                 setShowClearBubble(false);
-                              }}
-                              aria-label="Brush"
-                              title="Brush"
-                            >
-                              <Pencil size={16} strokeWidth={1.6} />
-                            </button>
-                            <div className="tool-anchor">
+                              }
+                            }}
+                            aria-label="Eraser"
+                            title="Eraser"
+                          >
+                            <Eraser size={16} strokeWidth={1.6} />
+                          </button>
+                          <div
+                            className={`tool-sub ${
+                              designTool === "eraser" && showClearBubble
+                                ? "is-visible"
+                                : ""
+                            }`}
+                          >
+                            <div className="bubble">
                               <button
                                 type="button"
-                                className={`tool-btn ${
-                                  designTool === "eraser" ? "active" : ""
-                                }`}
-                              onClick={() => {
-                                if (designTool === "eraser") {
-                                  setShowClearBubble((prev) => !prev);
-                                } else {
-                                  setDesignTool("eraser");
-                                  setShowClearBubble(false);
-                                }
-                              }}
-                                aria-label="Eraser"
-                                title="Eraser"
+                                className="clear-btn"
+                                onClick={clearDesignCanvas}
                               >
-                                <Eraser size={16} strokeWidth={1.6} />
+                                모두 지우기
                               </button>
-                              <div
-                                className={`tool-sub ${
-                                  designTool === "eraser" && showClearBubble
-                                    ? "is-visible"
-                                    : ""
-                                }`}
-                              >
-                                <div className="bubble">
-                                  <button
-                                    type="button"
-                                    className="clear-btn"
-                                    onClick={clearDesignCanvas}
-                                  >
-                                    모두 지우기
-                                  </button>
-                                </div>
-                              </div>
                             </div>
                           </div>
-                          <label className="color-picker">
-                            색상
-                            <input
-                              type="color"
-                              value={designColor}
-                              onChange={(event) =>
-                                setDesignColor(event.target.value)
-                              }
-                              aria-label="Brush color"
-                            />
-                          </label>
-                          <label className="size-control">
-                            굵기
-                            <input
-                              type="range"
-                              min="2"
-                              max="14"
-                              value={designSize}
-                              onChange={(event) =>
-                                setDesignSize(Number(event.target.value))
-                              }
-                            />
-                          </label>
-                        </div>
-                        <div className="design-canvas-wrap">
-                          <canvas
-                            ref={designCanvasRef}
-                            className="design-canvas"
-                            style={{ cursor: "crosshair" }}
-                            width="720"
-                            height="420"
-                            onMouseDown={handleCanvasDraw}
-                            aria-label="Design canvas"
-                          />
-                          <p className="design-hint">
-                            {designCategory} 실루엣을 드로잉하세요. 클릭하면
-                            전체 화면으로 이동합니다.
-                          </p>
                         </div>
                       </div>
-                      <div className="workbench-prompt">
-                        <div className="design-selects">
-                          <label className="field">
-                            성별
-                            <select
-                              value={designGender}
-                              onChange={(event) =>
-                                setDesignGender(event.target.value)
-                              }
-                            >
-                              {["Mens", "Womens", "Unisex"].map((item) => (
-                                <option key={item} value={item}>
-                                  {item}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="field">
-                            옷 종류
-                            <select
-                              value={designCategory}
-                              onChange={(event) => {
-                                const nextCategory = event.target.value;
-                                setDesignCategory(nextCategory);
-                                const nextOptions =
-                                  designLengthOptions[nextCategory] || [];
-                                if (
-                                  nextOptions.length &&
-                                  !nextOptions.includes(designLength)
-                                ) {
-                                  setDesignLength(nextOptions[0]);
-                                }
-                              }}
-                            >
-                              {["상의", "하의", "아우터", "원피스"].map(
-                                (item) => (
-                                  <option key={item} value={item}>
-                                    {item}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-                          </label>
-                          <label className="field">
-                            기장
-                            <select
-                              value={designLength}
-                              onChange={(event) =>
-                                setDesignLength(event.target.value)
-                              }
-                            >
-                              {(designLengthOptions[designCategory] || []).map(
-                                (item) => (
-                                  <option key={item} value={item}>
-                                    {item}
-                                  </option>
-                                ),
-                              )}
-                            </select>
-                          </label>
-                        </div>
-                        <div className="subsection">
-                          <h4>Fabric Properties</h4>
-                          {["stretch", "weight", "stiffness"].map((key) => (
-                            <label key={key} className="slider">
-                              <span>{key}</span>
-                              <input
-                                type="range"
-                                min="1"
-                                max="10"
-                                value={fabric[key]}
-                                onChange={(event) =>
-                                  setFabric((prev) => ({
-                                    ...prev,
-                                    [key]: Number(event.target.value),
-                                  }))
-                                }
-                              />
-                              <span>{fabric[key]}/10</span>
-                            </label>
-                          ))}
-                        </div>
-                        <label className="field">
-                          Design Prompt
-                          <textarea
-                            value={prompt}
-                            onChange={(event) => setPrompt(event.target.value)}
-                            placeholder="미니멀한 오버사이즈 코트, 대칭적인 라펠과 깊은 블랙 톤"
-                          />
-                        </label>
-                      </div>
+                      <label className="color-picker">
+                        색상
+                        <input
+                          type="color"
+                          value={designColor}
+                          onChange={(event) =>
+                            setDesignColor(event.target.value)
+                          }
+                          aria-label="Brush color"
+                        />
+                      </label>
+                      <label className="size-control">
+                        굵기
+                        <input
+                          type="range"
+                          min="2"
+                          max="14"
+                          value={designSize}
+                          onChange={(event) =>
+                            setDesignSize(Number(event.target.value))
+                          }
+                        />
+                      </label>
+                    </div>
+                    <div className="design-canvas-wrap">
+                      <canvas
+                        ref={designCanvasRef}
+                        className="design-canvas"
+                        style={{ cursor: "crosshair" }}
+                        width="720"
+                        height="420"
+                        onMouseDown={handleCanvasDraw}
+                        aria-label="Design canvas"
+                      />
+                      <p className="design-hint">
+                        {designCategory} 실루엣을 드로잉하세요. 클릭하면 전체
+                        화면으로 이동합니다.
+                      </p>
                     </div>
                   </div>
+                  <div className="workbench-prompt">
+                    <div className="design-selects">
+                      <label className="field">
+                        성별
+                        <select
+                          value={designGender}
+                          onChange={(event) =>
+                            setDesignGender(event.target.value)
+                          }
+                        >
+                          {["Mens", "Womens", "Unisex"].map((item) => (
+                            <option key={item} value={item}>
+                              {item}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        옷 종류
+                        <select
+                          value={designCategory}
+                          onChange={(event) => {
+                            const nextCategory = event.target.value;
+                            setDesignCategory(nextCategory);
+                            const nextOptions =
+                              designLengthOptions[nextCategory] || [];
+                            if (
+                              nextOptions.length &&
+                              !nextOptions.includes(designLength)
+                            ) {
+                              setDesignLength(nextOptions[0]);
+                            }
+                          }}
+                        >
+                          {["상의", "하의", "아우터", "원피스"].map((item) => (
+                            <option key={item} value={item}>
+                              {item}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        기장
+                        <select
+                          value={designLength}
+                          onChange={(event) =>
+                            setDesignLength(event.target.value)
+                          }
+                        >
+                          {(designLengthOptions[designCategory] || []).map(
+                            (item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="subsection">
+                      <h4>Fabric Properties</h4>
+                      {["stretch", "weight", "stiffness"].map((key) => (
+                        <label key={key} className="slider">
+                          <span>{key}</span>
+                          <input
+                            type="range"
+                            min="1"
+                            max="10"
+                            value={fabric[key]}
+                            onChange={(event) =>
+                              setFabric((prev) => ({
+                                ...prev,
+                                [key]: Number(event.target.value),
+                              }))
+                            }
+                          />
+                          <span>{fabric[key]}/10</span>
+                        </label>
+                      ))}
+                    </div>
+                    <label className="field">
+                      Design Prompt
+                      <textarea
+                        value={prompt}
+                        onChange={(event) => setPrompt(event.target.value)}
+                        placeholder="미니멀한 오버사이즈 코트, 대칭적인 라펠과 깊은 블랙 톤"
+                      />
+                    </label>
+                  </div>
                 </div>
+              </div>
+            </div>
           </section>
         )}
 
@@ -2968,24 +3064,22 @@ function App() {
 
             <div className="fitting-layout">
               <div className="fitting-preview">
-                <img src={userProfile.base_photo_url} alt="base" />
-                <div
-                  className="layer-stack"
-                  style={{ transform: `scale(${pixelRatio})` }}
-                >
-                  {fittingLayers.map((id) => (
-                    <img
-                      key={id}
-                      src={clothingMap[id]?.design_img_url}
-                      alt="layer"
-                    />
-                  ))}
-                </div>
+                <Canvas camera={{ position: [0, 0, 1.5], fov: 45 }}>
+                  <ambientLight intensity={0.6} />
+                  <directionalLight position={[2, 2, 2]} intensity={0.8} />
+                  <OrbitControls enablePan={false} />
+                  <Suspense fallback={null}>
+                    <Environment preset="city" />
+                    <Center>
+                      <Tshirt />
+                    </Center>
+                  </Suspense>
+                </Canvas>
                 {isComposing && <div className="compose">AI 합성 중...</div>}
               </div>
 
               <div className="fitting-panel">
-                <div className="panel-block">
+                <div className="panel-block layer-panel">
                   <h3>레이어링 피팅</h3>
                   <div className="layer-list">
                     {fittingLayers.map((id, index) => (
@@ -3066,13 +3160,7 @@ function App() {
                       type="button"
                       className="closet-link"
                       onClick={() => {
-                        const funding = fundings.find(
-                          (entry) => entry.clothing_id === item.id,
-                        );
-                        if (!funding) return;
-                        setActiveTab("discover");
-                        setDetailItem({ funding, clothing: item });
-                        setDetailTab("overview");
+                        openClothingDetail(item.id);
                       }}
                     >
                       <img src={item.design_img_url} alt={item.name} />
@@ -3161,8 +3249,19 @@ function App() {
 
             {portfolioTab === "investee" && (
               <div className="portfolio-grid portfolio-brands-layout">
-                <div className="panel">
-                  <h3>My Brands</h3>
+                <div className="panel my-brands-panel">
+                  <div className="panel-title-row">
+                    <h3>My Brands</h3>
+                    {brands.length > 2 && (
+                      <button
+                        type="button"
+                        className="ghost"
+                        onClick={() => setBrandFundingOpen(true)}
+                      >
+                        더보기
+                      </button>
+                    )}
+                  </div>
                   <div className="chart">
                     {brands.map((item) => (
                       <div key={item.id} className="chart-row">
@@ -3175,7 +3274,7 @@ function App() {
                     ))}
                   </div>
                   <div className="brand-list">
-                    {brands.map((item) => (
+                    {brands.slice(0, 2).map((item) => (
                       <div key={item.id} className="brand-card">
                         <div>
                           <strong>{item.brand}</strong>
@@ -3287,29 +3386,72 @@ function App() {
                     {investments.length === 0 ? (
                       <p className="empty">펀딩한 내역이 없습니다.</p>
                     ) : (
-                      investments.map((item) => (
-                        <div key={item.id} className="investment-card">
-                          <img src={item.image} alt={item.itemName} />
-                          <div>
-                            <strong>{item.brand}</strong>
-                            <p>{item.itemName}</p>
-                            <p>\{currency.format(item.amount)}</p>
-                            <span className="status">{item.status}</span>
-                            <span className="eta">예상 배송: {item.eta}</span>
+                      investments.map((item) => {
+                        const matchedClothing = clothing.find(
+                          (cloth) =>
+                            cloth.name?.toLowerCase() ===
+                            item.itemName.toLowerCase(),
+                        );
+                        const matchedBrand =
+                          brandProfileMap[item.brand.toLowerCase()] || null;
+
+                        return (
+                          <div key={item.id} className="investment-card">
+                            <button
+                              type="button"
+                              className="investment-media"
+                              onClick={() => {
+                                if (!matchedClothing) return;
+                                openClothingDetail(matchedClothing.id);
+                              }}
+                            >
+                              <img src={item.image} alt={item.itemName} />
+                            </button>
+                            <div>
+                              <button
+                                type="button"
+                                className="investment-brand"
+                                onClick={() => {
+                                  if (!matchedBrand) return;
+                                  openBrandProfile(matchedBrand);
+                                  setActiveTab("portfolio");
+                                }}
+                              >
+                                {item.brand}
+                              </button>
+                              <button
+                                type="button"
+                                className="investment-item"
+                                onClick={() => {
+                                  if (!matchedClothing) return;
+                                  openClothingDetail(matchedClothing.id);
+                                }}
+                              >
+                                {item.itemName}
+                              </button>
+                              <span className="status">{item.status}</span>
+                              <span className="eta">예상 배송: {item.eta}</span>
+                            </div>
+                            <div className="investment-actions">
+                              <strong className="investment-price">
+                                ₩{currency.format(item.amount)}
+                              </strong>
+                              <button
+                                type="button"
+                                className="ghost"
+                                onClick={() =>
+                                  setCancelFundingModal({
+                                    open: true,
+                                    investmentId: item.id,
+                                  })
+                                }
+                              >
+                                펀딩 취소
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            type="button"
-                            className="ghost"
-                            onClick={() =>
-                              setInvestments((prev) =>
-                                prev.filter((entry) => entry.id !== item.id),
-                              )
-                            }
-                          >
-                            펀딩 취소
-                          </button>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -3662,18 +3804,7 @@ function App() {
                   <span>Updated: {userProfile.updatedAt}</span>
                 </div>
 
-                <div className="profile-account-bar">
-                  <button type="button" className="ghost">
-                    구글 계정 변경
-                  </button>
-                  <button
-                    type="button"
-                    className="ghost"
-                    onClick={() => openAuthModal("logout-confirm")}
-                  >
-                    로그아웃
-                  </button>
-                </div>
+
               </div>
             </div>
           </section>
@@ -3854,7 +3985,317 @@ function App() {
           </div>
         </div>
       )}
+      {brandFundingOpen && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content brand-funding-modal">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={() => setBrandFundingOpen(false)}
+            >
+              ×
+            </button>
+            <h3>펀딩 현황</h3>
+            <div className="brand-list">
+              {brands.map((item) => (
+                <div key={item.id} className="brand-card">
+                  <div>
+                    <strong>{item.brand}</strong>
+                    <p>
+                      참여 {item.participantCount}명 · \
+                      {currency.format(item.currentCoin)}
+                    </p>
+                  </div>
+                  <textarea
+                    value={item.production_note}
+                    onChange={(event) =>
+                      updateNote(item.id, event.target.value)
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="auth-modal-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setBrandFundingOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {cancelFundingModal.open && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={closeCancelFundingModal}
+            >
+              ×
+            </button>
+            <h3>펀딩을 취소할까요?</h3>
+            <p>취소 후에는 다시 참여해야 합니다.</p>
+            <div className="auth-modal-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={closeCancelFundingModal}
+              >
+                돌아가기
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  setInvestments((prev) =>
+                    prev.filter(
+                      (entry) => entry.id !== cancelFundingModal.investmentId,
+                    ),
+                  );
+                  closeCancelFundingModal();
+                }}
+              >
+                펀딩 취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {aiDesignModal.open && aiDesignModal.design && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content ai-design-modal">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={() => {
+                setAiDesignModal({ open: false, design: null });
+                setAiDesignEditMode(false);
+              }}
+            >
+              ×
+            </button>
+            <div className="ai-design-header">
+              <h3>AI Design</h3>
+              <div className="ai-design-actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={handleAiDesignEditToggle}
+                >
+                  {aiDesignEditMode ? "저장" : "수정"}
+                </button>
+                <button type="button" className="primary">
+                  업로드
+                </button>
+              </div>
+            </div>
+            <div className="ai-design-frame">
+              <div className="modal-stack ai-design-stack">
+                <div className="modal-header">
+                  <div>
+                    <h2>{brand.name}</h2>
+                    {aiDesignEditMode ? (
+                      <input
+                        className="ai-design-input"
+                        value={aiDesignDraft.name}
+                        onChange={(event) =>
+                          setAiDesignDraft((prev) => ({
+                            ...prev,
+                            name: event.target.value,
+                          }))
+                        }
+                        aria-label="Design name"
+                      />
+                    ) : (
+                      <p>{aiDesignModal.design.name}</p>
+                    )}
+                  </div>
+                  <div className="pill-group">
+                    {["overview", "story", "feedback"].map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        className={`pill ${
+                          detailTab === tab ? "active" : ""
+                        }`}
+                        onClick={() => setDetailTab(tab)}
+                      >
+                        {tab === "overview" && "Overview"}
+                        {tab === "story" && "Story"}
+                        {tab === "feedback" && "Feedback"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="modal-body">
+                  <div className="detail-media">
+                    <img
+                      src={aiDesignModal.design.design_img_url}
+                      alt={aiDesignModal.design.name}
+                    />
+                  </div>
+                  <div className="detail-scroll">
+                    {detailTab === "overview" && (
+                      <div className="detail-block">
+                        <div className="price-row">
+                          <div className="price-main">
+                            <span className="price-label">Price</span>
+                            {aiDesignEditMode ? (
+                              <input
+                                className="ai-design-input price"
+                                type="number"
+                                min="0"
+                                value={aiDesignDraft.price}
+                                onChange={(event) =>
+                                  setAiDesignDraft((prev) => ({
+                                    ...prev,
+                                    price: event.target.value,
+                                  }))
+                                }
+                                aria-label="Design price"
+                              />
+                            ) : (
+                              <strong className="price-strong">
+                                {currency.format(
+                                  aiDesignModal.design.price || 0,
+                                )}
+                              </strong>
+                            )}
+                          </div>
+                        </div>
+                        <h4>옷 세부내용</h4>
+                        {aiDesignEditMode ? (
+                          <textarea
+                            className="ai-design-textarea"
+                            value={aiDesignDraft.description}
+                            onChange={(event) =>
+                              setAiDesignDraft((prev) => ({
+                                ...prev,
+                                description: event.target.value,
+                              }))
+                            }
+                          />
+                        ) : (
+                          <p>
+                            {aiDesignModal.design.description ||
+                              "AI가 생성한 컨셉을 기반으로 실루엣과 소재 밸런스를 설계했습니다."}
+                          </p>
+                        )}
+                        <div className="spec-grid">
+                          <div>
+                            <span>카테고리</span>
+                            {aiDesignEditMode ? (
+                              <input
+                                className="ai-design-input"
+                                value={aiDesignDraft.category}
+                                onChange={(event) =>
+                                  setAiDesignDraft((prev) => ({
+                                    ...prev,
+                                    category: event.target.value,
+                                  }))
+                                }
+                                aria-label="Design category"
+                              />
+                            ) : (
+                              <strong>{aiDesignModal.design.category}</strong>
+                            )}
+                          </div>
+                          <div>
+                            <span>스타일</span>
+                            {aiDesignEditMode ? (
+                              <input
+                                className="ai-design-input"
+                                value={aiDesignDraft.style}
+                                onChange={(event) =>
+                                  setAiDesignDraft((prev) => ({
+                                    ...prev,
+                                    style: event.target.value,
+                                  }))
+                                }
+                                aria-label="Design style"
+                              />
+                            ) : (
+                              <strong>{aiDesignModal.design.style}</strong>
+                            )}
+                          </div>
+                          <div>
+                            <span>성별</span>
+                            {aiDesignEditMode ? (
+                              <input
+                                className="ai-design-input"
+                                value={aiDesignDraft.gender}
+                                onChange={(event) =>
+                                  setAiDesignDraft((prev) => ({
+                                    ...prev,
+                                    gender: event.target.value,
+                                  }))
+                                }
+                                aria-label="Design gender"
+                              />
+                            ) : (
+                              <strong>{aiDesignModal.design.gender}</strong>
+                            )}
+                          </div>
+                          <div>
+                            <span>사이즈</span>
+                            <strong>XS - XL</strong>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {detailTab === "story" && (
+                      <div className="detail-block">
+                        <h4>브랜드 스토리</h4>
+                        {aiDesignEditMode ? (
+                          <textarea
+                            className="ai-design-textarea"
+                            value={aiDesignDraft.story}
+                            onChange={(event) =>
+                              setAiDesignDraft((prev) => ({
+                                ...prev,
+                                story: event.target.value,
+                              }))
+                            }
+                          />
+                        ) : (
+                          <p>
+                            {aiDesignModal.design.story ||
+                              "AI가 트렌드 데이터를 분석해 감각적인 컬렉션 스토리를 구성했습니다. 디자이너가 세부 디테일을 다듬을 수 있도록 여지를 남겨두었습니다."}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {detailTab === "feedback" && (
+                      <div className="detail-block">
+                        <h4>소셜 피드백</h4>
+                        <p className="comment-empty">
+                          아직 생성된 피드백이 없습니다.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/" element={appContent} />
+      <Route path="/fitting" element={<MyFitting />} />
+      <Route path="/*" element={appContent} />
+    </Routes>
   );
 }
 

@@ -51,6 +51,14 @@
   margin-bottom: 0;
 }
 
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
 .portfolio-tabs {
   display: flex;
   gap: 10px;
@@ -155,6 +163,34 @@
   font-size: 13px;
 }
 
+.investment-media {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  width: 84px;
+  height: 84px;
+}
+
+.investment-brand,
+.investment-item {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-body);
+  display: block;
+}
+
+.investment-brand {
+  font-weight: 600;
+}
+
+.investment-item {
+  margin-top: 4px;
+}
+
 .investment-card img {
   width: 84px;
   height: 84px;
@@ -164,6 +200,18 @@
 
 .investment-card p {
   margin: 4px 0 0;
+}
+
+.investment-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.investment-price {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .investment-card .status,

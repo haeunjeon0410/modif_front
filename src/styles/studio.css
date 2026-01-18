@@ -16,27 +16,19 @@
   gap: 20px;
 }
 
-
 .studio-workbench-actions {
   display: inline-flex;
- 
-  gap: 20px; 
-  
+
+  gap: 20px;
+
   align-items: center;
 }
 
 .studio-workbench-actions .secondary,
 .studio-workbench-actions .primary {
-  /* [수정] 둘 다 똑같은 크기로 맞추되, 글씨가 들어갈 만큼만 컴팩트하게! */
-  width: 93px; 
-  
-  /* [수정] 안쪽 여백을 줄여서 버튼을 더 날렵하게 만듭니다 */
-  padding: 8px 0; 
-  
-  /* 기존 min-width가 있다면 무시하거나 삭제 */
-  min-width: auto; 
-  
-  /* 글자 가운데 정렬 */
+  width: 93px;
+  padding: 8px 0;
+  min-width: auto;
   justify-content: center;
 }
 
@@ -50,15 +42,15 @@
   color: var(--muted);
 }
 
-.studio-workbench .workbench-body {    /* 👈 앞에 .studio-workbench 추가 */
+.studio-workbench .workbench-body {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 32px;
+  gap: 16px;
 }
-.studio-workbench .workbench-canvas {  /* 👈 앞에 .studio-workbench 추가 */
+.studio-workbench .workbench-canvas {
   display: flex;
   flex-direction: column;
-  gap: 8px; 
+  gap: 8px;
 }
 
 .studio-workbench .design-canvas {

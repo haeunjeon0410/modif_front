@@ -287,7 +287,7 @@ export const initialInvestments = [
     itemName: "Cloud Belt Coat",
     image: "/image6.png",
     amount: 150000,
-    status: "?? - ?? ?",
+    status: "Funding",
     eta: "2026-02-20",
   },
   {
@@ -296,7 +296,7 @@ export const initialInvestments = [
     itemName: "Sky Knit Pullover",
     image: "/image1.jpeg",
     amount: 90000,
-    status: "?? ??",
+    status: "In progress",
     eta: "2026-02-10",
   },
   {
@@ -305,7 +305,7 @@ export const initialInvestments = [
     itemName: "Chestnut Blazer",
     image: "/image3.jpeg",
     amount: 240000,
-    status: "?? ??",
+    status: "In progress",
     eta: "2026-01-05",
   },
 ];

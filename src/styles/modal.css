@@ -176,6 +176,59 @@
   cursor: pointer;
 }
 
+.ai-design-modal {
+  max-width: 1120px;
+  width: 92%;
+  padding: 28px;
+}
+
+.ai-design-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ai-design-header h3 {
+  margin: 0;
+}
+
+.ai-design-actions {
+  display: inline-flex;
+  gap: 10px;
+}
+
+.ai-design-frame {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  background: #ffffff;
+}
+
+.ai-design-stack .modal-header {
+  margin-bottom: 24px;
+}
+
+.ai-design-input,
+.ai-design-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-family: var(--font-body);
+}
+
+.ai-design-input.price {
+  max-width: 140px;
+}
+
+.ai-design-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
 .pill-group {
   display: flex;
   gap: 16px;
