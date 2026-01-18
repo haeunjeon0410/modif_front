@@ -60,6 +60,7 @@
   justify-content: center;
   background: #f7f7f7;
   padding: 24px 16px 36px;
+  margin-bottom: 16px;
 }
 
 .modal-body img {
@@ -635,4 +636,3 @@
   background: #111111;
   color: #ffffff;
 }
-

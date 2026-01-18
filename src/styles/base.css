@@ -408,6 +408,21 @@
   display: flex;
   gap: 16px;
   margin-left: 150px;
+  align-items: center;
+}
+
+.top-user-login {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: #111111;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.top-user-login:hover {
+  background: #f4f4f4;
 }
 
 .notif-wrap {
@@ -832,7 +847,7 @@ body.intro-open {
 
 .intro-actions {
   margin: 18px 0 90px;
-  gap: 64px;
+  gap: 84px;
   justify-content: center;
   align-items: center;
   width: 100%;
@@ -846,7 +861,7 @@ body.intro-open {
   background: transparent;
   color: rgba(255, 255, 255, 0.92);
   padding: 6px 0;
-  font-size: 14px;
+  font-size: 16px;
   letter-spacing: 0.6px;
   text-transform: uppercase;
   cursor: pointer;
@@ -1488,6 +1503,27 @@ body.intro-open {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+}
+
+.auth-modal-form {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-modal-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: #4a4a4a;
+}
+
+.auth-modal-form input {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  font-size: 13px;
+  color: var(--ink);
+  background: #ffffff;
 }
 
 .auth-modal-close {

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import {
   initialClothing,
@@ -27,6 +27,7 @@ import {
   Filter,
   User,
   Pencil,
+  Eraser,
 } from "lucide-react";
 
 function App() {
@@ -73,6 +74,8 @@ function App() {
   const [brandEditing, setBrandEditing] = useState(false);
   const [portfolioListOpen, setPortfolioListOpen] = useState(null);
   const [authModal, setAuthModal] = useState({ open: false, mode: null });
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [loginDraft, setLoginDraft] = useState({ handle: "", password: "" });
   const [myBrandDetails, setMyBrandDetails] = useState({
     brand: brand.name.toUpperCase(),
     handle: "@motif.studio",
@@ -80,10 +83,22 @@ function App() {
     location: "Seoul",
     logoUrl: "/logo.png",
   });
-  const [introOpen, setIntroOpen] = useState(true);
+  const [introOpen, setIntroOpen] = useState(() => {
+    try {
+      return window.localStorage.getItem("modifLoggedIn") !== "true";
+    } catch {
+      return true;
+    }
+  });
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    try {
+      return window.localStorage.getItem("modifLoggedIn") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [pendingTab, setPendingTab] = useState(null);
   const [measurementMode, setMeasurementMode] = useState("manual");
   const [signupDraft, setSignupDraft] = useState(() => ({
@@ -119,6 +134,14 @@ function App() {
   const [commentMenuId, setCommentMenuId] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [designCategory, setDesignCategory] = useState("상의");
+  const [designTool, setDesignTool] = useState("brush");
+  const [designColor, setDesignColor] = useState("#111111");
+  const [designSize, setDesignSize] = useState(6);
+  const [isCanvasZoomOpen, setIsCanvasZoomOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const designCanvasRef = useRef(null);
+  const zoomCanvasRef = useRef(null);
+  const drawMetaRef = useRef({ moved: false });
 
   const fundingsFeed = useMemo(() => {
     return [...fundings]
@@ -643,9 +666,16 @@ function App() {
     const canvas = event.currentTarget;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.lineWidth = 3;
+    drawMetaRef.current.moved = false;
+    ctx.lineWidth = designSize;
     ctx.lineCap = "round";
-    ctx.strokeStyle = "#111111";
+    if (designTool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.strokeStyle = "rgba(0, 0, 0, 1)";
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = designColor;
+    }
     const rect = canvas.getBoundingClientRect();
     const startX = event.clientX - rect.left;
     const startY = event.clientY - rect.top;
@@ -653,6 +683,7 @@ function App() {
     ctx.moveTo(startX, startY);
 
     const draw = (moveEvent) => {
+      drawMetaRef.current.moved = true;
       const x = moveEvent.clientX - rect.left;
       const y = moveEvent.clientY - rect.top;
       ctx.lineTo(x, y);
@@ -660,12 +691,30 @@ function App() {
     };
 
     const stop = () => {
+      ctx.globalCompositeOperation = "source-over";
       window.removeEventListener("mousemove", draw);
       window.removeEventListener("mouseup", stop);
     };
 
     window.addEventListener("mousemove", draw);
     window.addEventListener("mouseup", stop);
+  };
+
+  const openCanvasZoom = () => {
+    setIsCanvasZoomOpen(true);
+  };
+
+  const closeCanvasZoom = () => {
+    const source = zoomCanvasRef.current;
+    const target = designCanvasRef.current;
+    if (source && target) {
+      const ctx = target.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, target.width, target.height);
+        ctx.drawImage(source, 0, 0, target.width, target.height);
+      }
+    }
+    setIsCanvasZoomOpen(false);
   };
 
   const resetFilters = () => {
@@ -698,14 +747,7 @@ function App() {
 
   const openLoginFlow = () => {
     setIntroOpen(false);
-    resetOnboarding();
-    setOnboardingStep(0);
-    setOnboardingOpen(true);
-  };
-
-  const openSignupIntro = () => {
-    setOnboardingOpen(false);
-    setIntroOpen(true);
+    setLoginModalOpen(true);
   };
 
   const openAuthModal = (mode) => {
@@ -714,6 +756,18 @@ function App() {
 
   const closeAuthModal = () => {
     setAuthModal({ open: false, mode: null });
+  };
+
+  const closeLoginModal = () => {
+    setLoginModalOpen(false);
+  };
+
+  const submitLogin = () => {
+    if (!loginDraft.handle.trim() || !loginDraft.password.trim()) return;
+    setIsLoggedIn(true);
+    setLoginModalOpen(false);
+    setActiveTab(pendingTab || "discover");
+    setPendingTab(null);
   };
 
   const handleLogout = () => {
@@ -725,6 +779,7 @@ function App() {
     setPortfolioListOpen(null);
     setSelectedBrandKey(null);
     setPendingTab(null);
+    setLoginDraft({ handle: "", password: "" });
     setFundings((prev) =>
       prev.map((item) =>
         item.liked
@@ -804,6 +859,24 @@ function App() {
   useEffect(() => {
     document.body.classList.toggle("dark", darkMode);
   }, [darkMode]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      "modifLoggedIn",
+      isLoggedIn ? "true" : "false"
+    );
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isCanvasZoomOpen) return;
+    const source = designCanvasRef.current;
+    const target = zoomCanvasRef.current;
+    if (!source || !target) return;
+    const ctx = target.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, target.width, target.height);
+    ctx.drawImage(source, 0, 0, target.width, target.height);
+  }, [isCanvasZoomOpen]);
 
   useEffect(() => {
     document.body.classList.toggle("intro-open", introOpen);
@@ -1382,6 +1455,23 @@ function App() {
             )}
           </div>
           <div className="top-actions">
+            {isLoggedIn ? (
+              <button
+                type="button"
+                className="top-user-login"
+                onClick={() => openAuthModal("logout-confirm")}
+              >
+                로그아웃
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="top-user-login"
+                onClick={openLoginFlow}
+              >
+                로그인
+              </button>
+            )}
             <div className="notif-wrap">
               <button
                 className="icon-btn"
@@ -2055,52 +2145,163 @@ function App() {
 
         {activeTab === "studio" && (
           <section className="content">
-            <div className="page-title">
-              <h1>Studio</h1>
-              <p>창작자의 작업실 - AI 디자인과 피팅 엔진을 생성합니다.</p>
+            <div className="page-title page-title-row">
+              <div>
+                <h1>Studio</h1>
+                <p>창작자의 작업실 - AI 디자인과 피팅 엔진을 생성합니다.</p>
+              </div>
+              <div className="page-title-actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => setIsGalleryOpen(true)}
+                >
+                  Generated Gallery
+                </button>
+              </div>
             </div>
 
-            <div className="studio-grid">
-              <div className="panel">
-                <h3>AI 디자인 생성</h3>
-                <label className="field">
-                  Design Prompt
-                  <textarea
-                    value={prompt}
-                    onChange={(event) => setPrompt(event.target.value)}
-                    placeholder="미니멀한 오버사이즈 코트, 대칭적인 라펠과 깊은 블랙 톤"
-                  />
-                </label>
-                <button
-                  className="primary"
-                  type="button"
-                  onClick={generateDesign}
-                >
-                  Magic Generate
-                </button>
-
-                <div className="subsection">
-                  <h4>Fabric Properties</h4>
-                  {["stretch", "weight", "stiffness"].map((key) => (
-                    <label key={key} className="slider">
-                      <span>{key}</span>
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                        value={fabric[key]}
-                        onChange={(event) =>
-                          setFabric((prev) => ({
-                            ...prev,
-                            [key]: Number(event.target.value),
-                          }))
-                        }
-                      />
-                      <span>{fabric[key]}/10</span>
-                    </label>
-                  ))}
+            <div className="studio-layout">
+              <div className="panel studio-workbench">
+                <div className="studio-workbench-header">
+                  <div>
+                    <h3>디자인 워크벤치</h3>
+                    <p className="studio-sub">
+                      스케치와 프롬프트를 함께 사용해 AI 디자인을 생성합니다.
+                    </p>
+                  </div>
+                  <button
+                    className="primary"
+                    type="button"
+                    onClick={generateDesign}
+                  >
+                    AI 디자인 생성
+                  </button>
                 </div>
+                <div className="workbench-body">
+                  <div className="workbench-canvas">
+                    <div className="design-tabs">
+                      {["상의", "하의", "아우터", "원피스"].map((category) => (
+                        <button
+                          key={category}
+                          type="button"
+                          className={`pill ${
+                            designCategory === category ? "active" : ""
+                          }`}
+                          onClick={() => setDesignCategory(category)}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="design-toolbar">
+                      <div className="tool-group">
+                        <button
+                          type="button"
+                          className={`tool-btn ${
+                            designTool === "brush" ? "active" : ""
+                          }`}
+                          onClick={() => setDesignTool("brush")}
+                          aria-label="Brush"
+                          title="Brush"
+                        >
+                          <Pencil size={16} strokeWidth={1.6} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`tool-btn ${
+                            designTool === "eraser" ? "active" : ""
+                          }`}
+                          onClick={() => setDesignTool("eraser")}
+                          aria-label="Eraser"
+                          title="Eraser"
+                        >
+                          <Eraser size={16} strokeWidth={1.6} />
+                        </button>
+                      </div>
+                      <div className="tool-group colors">
+                        {["#111111", "#d94848", "#2f6fed", "#f2b933"].map(
+                          (color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              className={`color-btn ${
+                                designColor === color ? "active" : ""
+                              }`}
+                              style={{ background: color }}
+                              onClick={() => setDesignColor(color)}
+                              aria-label={`color ${color}`}
+                            />
+                          )
+                        )}
+                      </div>
+                      <label className="size-control">
+                        굵기
+                        <input
+                          type="range"
+                          min="2"
+                          max="14"
+                          value={designSize}
+                          onChange={(event) =>
+                            setDesignSize(Number(event.target.value))
+                          }
+                        />
+                      </label>
+                    </div>
+                    <div className="design-canvas-wrap">
+                      <canvas
+                        ref={designCanvasRef}
+                        className="design-canvas"
+                        width="720"
+                        height="420"
+                        onMouseDown={handleCanvasDraw}
+                        onClick={() => {
+                          if (!drawMetaRef.current.moved) {
+                            openCanvasZoom();
+                          }
+                        }}
+                        aria-label="Design canvas"
+                      />
+                      <p className="design-hint">
+                        {designCategory} 실루엣을 드로잉하세요. 클릭하면 확대됩니다.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="workbench-prompt">
+                    <label className="field">
+                      Design Prompt
+                      <textarea
+                        value={prompt}
+                        onChange={(event) => setPrompt(event.target.value)}
+                        placeholder="미니멀한 오버사이즈 코트, 대칭적인 라펠과 깊은 블랙 톤"
+                      />
+                    </label>
+                    <div className="subsection">
+                      <h4>Fabric Properties</h4>
+                      {["stretch", "weight", "stiffness"].map((key) => (
+                        <label key={key} className="slider">
+                          <span>{key}</span>
+                          <input
+                            type="range"
+                            min="1"
+                            max="10"
+                            value={fabric[key]}
+                            onChange={(event) =>
+                              setFabric((prev) => ({
+                                ...prev,
+                                [key]: Number(event.target.value),
+                              }))
+                            }
+                          />
+                          <span>{fabric[key]}/10</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
+              <div className="panel studio-lab">
                 <div className="subsection">
                   <h4>마네킹 프리셋 테스트</h4>
                   <div className="pill-group">
@@ -2139,38 +2340,6 @@ function App() {
                   </div>
                 </div>
                 <div className="subsection">
-                  <h4>디자인 모드</h4>
-                  <div className="design-panel">
-                    <div className="design-tabs">
-                      {["상의", "하의", "아우터", "원피스"].map((category) => (
-                        <button
-                          key={category}
-                          type="button"
-                          className={`pill ${
-                            designCategory === category ? "active" : ""
-                          }`}
-                          onClick={() => setDesignCategory(category)}
-                        >
-                          {category}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="design-canvas-wrap">
-                      <canvas
-                        className="design-canvas"
-                        width="520"
-                        height="380"
-                        onMouseDown={handleCanvasDraw}
-                        aria-label="Design canvas"
-                      />
-                      <p className="design-hint">
-                        {designCategory} 실루엣을 드로잉하세요.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="subsection">
                   <h4>브랜드 런칭</h4>
                   <p>
                     현재 디자인 수: <strong>{brand.clothes_count} / 10</strong>
@@ -2183,28 +2352,6 @@ function App() {
                     Discover로 전송
                   </button>
                   {studioNotice && <p className="notice">{studioNotice}</p>}
-                </div>
-              </div>
-
-              <div className="panel">
-                <h3>Generated Gallery</h3>
-                <div className="gallery-grid">
-                  {generatedDesigns.length === 0 && (
-                    <p className="empty">아직 생성된 디자인이 없습니다.</p>
-                  )}
-                  {generatedDesigns.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="gallery-card"
-                      style={{ animationDelay: `${index * 60}ms` }}
-                    >
-                      <img src={item.design_img_url} alt={item.name} />
-                      <div>
-                        <strong>{item.name}</strong>
-                        <span>{item.design_prompt}</span>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
@@ -2996,7 +3143,7 @@ function App() {
                   className="secondary"
                   onClick={() => {
                     closeAuthModal();
-                    openSignupIntro();
+                    startOnboarding();
                   }}
                 >
                   회원가입
@@ -3017,6 +3164,133 @@ function App() {
               >
                 {authModal.mode === "logout-confirm" ? "로그아웃" : "로그인"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {loginModalOpen && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={closeLoginModal}
+            >
+              ×
+            </button>
+            <h3>로그인</h3>
+            <div className="auth-modal-form">
+              <label>
+                아이디
+                <input
+                  value={loginDraft.handle}
+                  onChange={(event) =>
+                    setLoginDraft((prev) => ({
+                      ...prev,
+                      handle: event.target.value,
+                    }))
+                  }
+                  placeholder="@your.id"
+                />
+              </label>
+              <label>
+                비밀번호
+                <input
+                  type="password"
+                  value={loginDraft.password}
+                  onChange={(event) =>
+                    setLoginDraft((prev) => ({
+                      ...prev,
+                      password: event.target.value,
+                    }))
+                  }
+                  placeholder="비밀번호 입력"
+                />
+              </label>
+            </div>
+            <div className="auth-modal-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={startOnboarding}
+              >
+                회원가입
+              </button>
+              <button type="button" className="primary" onClick={submitLogin}>
+                로그인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isCanvasZoomOpen && (
+        <div
+          className="studio-zoom-modal"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeCanvasZoom}
+        >
+          <div
+            className="studio-zoom-content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={closeCanvasZoom}
+            >
+              ×
+            </button>
+            <canvas
+              ref={zoomCanvasRef}
+              className="design-canvas zoom"
+              width="980"
+              height="620"
+              onMouseDown={handleCanvasDraw}
+              aria-label="Zoomed design canvas"
+            />
+          </div>
+        </div>
+      )}
+      {isGalleryOpen && (
+        <div
+          className="studio-gallery-modal"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsGalleryOpen(false)}
+        >
+          <div
+            className="studio-gallery-content"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={() => setIsGalleryOpen(false)}
+            >
+              ×
+            </button>
+            <h3>Generated Gallery</h3>
+            <div className="gallery-grid">
+              {generatedDesigns.length === 0 && (
+                <p className="empty">아직 생성된 디자인이 없습니다.</p>
+              )}
+              {generatedDesigns.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="gallery-card"
+                  style={{ animationDelay: `${index * 60}ms` }}
+                >
+                  <img src={item.design_img_url} alt={item.name} />
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>{item.design_prompt}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
