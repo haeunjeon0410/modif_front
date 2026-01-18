@@ -16,6 +16,17 @@
   gap: 20px;
 }
 
+.studio-workbench-actions {
+  display: inline-flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.studio-workbench-actions .secondary,
+.studio-workbench-actions .primary {
+  min-width: 120px;
+}
+
 .studio-workbench-header h3 {
   margin: 0;
 }
@@ -26,16 +37,15 @@
   color: var(--muted);
 }
 
-.workbench-body {
+.studio-workbench .workbench-body {    /* 👈 앞에 .studio-workbench 추가 */
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 28px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 32px;
 }
-
-.workbench-canvas {
+.studio-workbench .workbench-canvas {  /* 👈 앞에 .studio-workbench 추가 */
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px; 
 }
 
 .studio-workbench .design-canvas {
@@ -43,7 +53,6 @@
   height: 420px;
   border-radius: 16px;
 }
-
 
 .studio-workbench .design-canvas-wrap {
   align-items: stretch;
@@ -105,6 +114,7 @@
 
 .size-control input {
   width: 140px;
+  accent-color: #111111;
 }
 
 .color-picker {
@@ -128,7 +138,8 @@
 .workbench-prompt {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 16px;
+  padding-top: 0;
 }
 
 .panel {
@@ -170,21 +181,30 @@
 .design-selects {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 16px;
 }
 
 .subsection {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
+}
+
+.subsection h4 {
+  margin: 0;
 }
 
 .slider {
   display: grid;
   grid-template-columns: 90px 1fr 50px;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
   font-size: 13px;
+}
+
+.workbench-prompt .field textarea {
+  height: 120px;
+  resize: none;
 }
 
 .slider input {
@@ -251,22 +271,36 @@
 }
 
 .studio-gallery-content {
-  width: min(960px, 92vw);
-  max-height: 80vh;
+  width: min(760px, 90vw);
+  max-height: 70vh;
+  min-height: 320px;
   background: #ffffff;
   border-radius: 18px;
-  padding: 20px;
+  padding: 16px;
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
   overflow: hidden;
+}
+
+.studio-gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.studio-gallery-count {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .studio-gallery-content .gallery-grid {
   overflow-y: auto;
   padding-right: 6px;
+  min-height: 200px;
 }
 
 .studio-canvas-page {

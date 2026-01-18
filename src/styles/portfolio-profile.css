@@ -5,6 +5,40 @@
   margin-bottom: 34px;
 }
 
+.portfolio-brands-layout {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr);
+  column-gap: 48px;
+  row-gap: 16px;
+  align-items: start;
+}
+
+.portfolio-brands-panel {
+  grid-row: span 2;
+}
+
+.follow-cta {
+  min-height: 120px;
+  display: grid;
+  align-content: center;
+}
+
+.portfolio-side {
+  display: grid;
+  gap: 16px;
+}
+
+.portfolio-side .panel:last-child {
+  flex: 1 1 auto;
+}
+
+.portfolio-brands-layout > .portfolio-side {
+  align-self: stretch;
+}
+
+.portfolio-brands-layout > .portfolio-side .panel {
+  height: auto;
+}
+
 .portfolio-grid.single {
   grid-template-columns: 1fr;
 }
@@ -61,6 +95,17 @@
   background: #000000;
   height: 100%;
   transition: width 0.4s ease;
+  transform-origin: left;
+  animation: portfolio-fill 0.6s ease;
+}
+
+@keyframes portfolio-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .brand-list {
@@ -83,7 +128,8 @@
   border-radius: 12px;
   padding: 10px;
   font-size: 12px;
-  min-height: 72px;
+  height: 72px;
+  resize: none;
 }
 
 .investment-list {
@@ -269,7 +315,7 @@
   padding: 14px;
   display: grid;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 8px;
   color: #111111;
   background: #ffffff;
 }
@@ -291,8 +337,8 @@
 }
 
 .follow-chart-scroll {
-  overflow-x: auto;
-  padding-bottom: 8px;
+  overflow: hidden;
+  padding-bottom: 0;
 }
 
 .follow-chart-canvas {
@@ -309,11 +355,14 @@
   position: relative;
   height: 20px;
   margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .follow-chart-x span {
-  position: absolute;
-  transform: translateX(-50%);
+  position: static;
+  transform: none;
   font-size: 10px;
   color: var(--muted);
   white-space: nowrap;
@@ -328,6 +377,21 @@
 
 .follow-actions {
   margin-top: 14px;
+}
+
+.follow-cta {
+  display: grid;
+  gap: 8px;
+}
+
+.follow-cta h3 {
+  margin: 0;
+}
+
+.follow-cta p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .follow-list {
@@ -443,7 +507,8 @@
 }
 
 .brand-hero-info textarea {
-  resize: vertical;
+  height: 84px;
+  resize: none;
 }
 .brand-hero {
   display: grid;
@@ -562,4 +627,3 @@
     transform: scale(1);
   }
 }
-

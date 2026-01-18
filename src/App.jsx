@@ -4,7 +4,6 @@ import {
   initialClothing,
   initialFunding,
   initialComments,
-  mannequins,
   initialInvestments,
   initialBrands,
   userBase,
@@ -47,16 +46,14 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [fabric, setFabric] = useState({ stretch: 5, weight: 5, stiffness: 5 });
-  const [selectedMannequin, setSelectedMannequin] = useState(mannequins[1].id);
   const [brand, setBrand] = useState({
     name: "Motif Studio",
     clothes_count: 7,
     is_public: false,
   });
   const [generatedDesigns, setGeneratedDesigns] = useState([]);
-  const [studioNotice, setStudioNotice] = useState("");
   const [fittingLayers, setFittingLayers] = useState([1, 2]);
-  const [pixelRatio, setPixelRatio] = useState(1);
+  const pixelRatio = 1;
   const [focusClothingId, setFocusClothingId] = useState(null);
   const [isComposing, setIsComposing] = useState(false);
   const [userProfile, setUserProfile] = useState(userBase);
@@ -134,15 +131,15 @@ function App() {
   const [commentMenuId, setCommentMenuId] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [designCategory, setDesignCategory] = useState("상의");
-  const [designLength, setDesignLength] = useState("미디");
+  const [designLength, setDesignLength] = useState("민소매");
   const [designGender, setDesignGender] = useState("Unisex");
   const [designTool, setDesignTool] = useState("brush");
   const [designColor, setDesignColor] = useState("#111111");
   const [designSize, setDesignSize] = useState(6);
-  const [isCanvasZoomOpen, setIsCanvasZoomOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [tempDesigns, setTempDesigns] = useState([]);
   const designCanvasRef = useRef(null);
-  const zoomCanvasRef = useRef(null);
+  const canvasPopupRef = useRef(null);
   const drawMetaRef = useRef({ moved: false });
 
   const fundingsFeed = useMemo(() => {
@@ -153,7 +150,7 @@ function App() {
 
   const likedClothingIds = useMemo(
     () => fundings.filter((item) => item.liked).map((item) => item.clothing_id),
-    [fundings]
+    [fundings],
   );
 
   const closetItems = useMemo(() => {
@@ -175,32 +172,25 @@ function App() {
     }, {});
   }, [brandProfiles]);
 
-  const followerSeries = useMemo(
-    () => [
-      { date: "2024-01", value: 42 },
-      { date: "2024-02", value: 58 },
-      { date: "2024-03", value: 67 },
-      { date: "2024-04", value: 84 },
-      { date: "2024-05", value: 96 },
-      { date: "2024-06", value: 112 },
-      { date: "2024-07", value: 138 },
-      { date: "2024-08", value: 165 },
-      { date: "2024-09", value: 192 },
-      { date: "2024-10", value: 214 },
-    ],
-    []
-  );
+  const followerSeries = useMemo(() => {
+    const values = [176, 182, 188, 195, 201, 208, 214];
+    return values.map((value, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (values.length - 1 - index));
+      const label = `${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+        date.getDate(),
+      ).padStart(2, "0")}`;
+      return { date: label, value };
+    });
+  }, []);
   const followerValues = useMemo(
     () => followerSeries.map((item) => item.value),
-    [followerSeries]
+    [followerSeries],
   );
-  const followerChartWidth = useMemo(
-    () => Math.max(360, (followerSeries.length - 1) * 90),
-    [followerSeries.length]
-  );
+  const followerChartWidth = useMemo(() => 360, []);
   const followerChartStep = useMemo(
     () => followerChartWidth / Math.max(1, followerSeries.length - 1),
-    [followerChartWidth, followerSeries.length]
+    [followerChartWidth, followerSeries.length],
   );
   const followerChartPoints = useMemo(() => {
     const height = 120;
@@ -220,6 +210,16 @@ function App() {
     const mid = Math.round((max + min) / 2);
     return [max, mid, min];
   }, [followerValues]);
+
+  const designLengthOptions = useMemo(
+    () => ({
+      상의: ["민소매", "숏", "미디", "롱"],
+      하의: ["숏", "하프", "롱"],
+      아우터: ["크롭", "숏", "하프", "롱"],
+      원피스: ["미니", "미디", "롱"],
+    }),
+    [],
+  );
 
   const currentFollowerCount =
     followerSeries[followerSeries.length - 1]?.value || 0;
@@ -245,7 +245,7 @@ function App() {
       brandProfiles.find(
         (profile) =>
           profile.handle === selectedBrandKey ||
-          profile.brand === selectedBrandKey
+          profile.brand === selectedBrandKey,
       ) || null
     );
   }, [
@@ -314,7 +314,7 @@ function App() {
       Dress: "Dress",
       Concept: "Tops",
     }),
-    []
+    [],
   );
 
   const categories = useMemo(() => {
@@ -330,7 +330,7 @@ function App() {
 
   const mainCategories = useMemo(
     () => ["All", "Tops", "Outer", "Bottoms", "Dress"],
-    []
+    [],
   );
   const mainCategoryLabels = useMemo(
     () => ({
@@ -340,7 +340,7 @@ function App() {
       Bottoms: "하의",
       Dress: "원피스",
     }),
-    []
+    [],
   );
   const signupMeasurementFields = useMemo(
     () => [
@@ -355,7 +355,7 @@ function App() {
       { label: "다리길이", key: "legLength" },
       { label: "발사이즈", key: "shoeSize" },
     ],
-    []
+    [],
   );
 
   const subCategories = useMemo(() => {
@@ -439,40 +439,13 @@ function App() {
     setGeneratedDesigns((prev) => [newDesign, ...prev]);
     setBrand((prev) => ({ ...prev, clothes_count: prev.clothes_count + 1 }));
     setPrompt("");
-    setStudioNotice("AI 디자인이 생성되었습니다. 소재 값을 조정해보세요.");
-  };
-
-  const handleLaunch = () => {
-    if (brand.is_public) {
-      setStudioNotice("이미 런칭된 브랜드입니다.");
-      return;
-    }
-    if (brand.clothes_count < 10) {
-      setStudioNotice("브랜드 런칭은 최소 10개의 디자인이 필요합니다.");
-      return;
-    }
-
-    const latestDesign = generatedDesigns[0] || clothing[0];
-    const newFunding = {
-      id: Math.max(...fundings.map((item) => item.id), 0) + 1,
-      clothing_id: latestDesign.id,
-      brand: brand.name.toUpperCase(),
-      status: "FUNDING",
-      goal_amount: 6000000,
-      current_amount: 150000,
-      created_at: formatDate(new Date()),
-    };
-
-    setFundings((prev) => [newFunding, ...prev]);
-    setBrand((prev) => ({ ...prev, is_public: true }));
-    setStudioNotice("Discover 탭으로 전송되었습니다.");
   };
 
   const handleTryOn = (clothingId) => {
     setActiveTab("fitting");
     setFocusClothingId(clothingId);
     setFittingLayers((prev) =>
-      prev.includes(clothingId) ? prev : [...prev, clothingId]
+      prev.includes(clothingId) ? prev : [...prev, clothingId],
     );
     setIsComposing(true);
     window.setTimeout(() => setIsComposing(false), 1200);
@@ -497,7 +470,7 @@ function App() {
           return { ...current, funding: nextItem };
         });
         return nextItem;
-      })
+      }),
     );
   };
 
@@ -569,8 +542,8 @@ function App() {
   const updateNote = (brandId, value) => {
     setBrands((prev) =>
       prev.map((item) =>
-        item.id === brandId ? { ...item, production_note: value } : item
-      )
+        item.id === brandId ? { ...item, production_note: value } : item,
+      ),
     );
   };
 
@@ -582,8 +555,8 @@ function App() {
         prev.map((item) =>
           item.id === editingCommentId
             ? { ...item, rating: commentDraft.rating, text: trimmed }
-            : item
-        )
+            : item,
+        ),
       );
     } else {
       const nextId = Math.max(0, ...comments.map((item) => item.id)) + 1;
@@ -609,10 +582,10 @@ function App() {
     ? clamp(
         Math.round(
           (detailItem.funding.current_amount / detailItem.funding.goal_amount) *
-            100
+            100,
         ),
         0,
-        100
+        100,
       )
     : 0;
 
@@ -626,7 +599,7 @@ function App() {
       bio: myBrandDetails.bio,
       location: myBrandDetails.location,
     }),
-    [currentFollowerCount, followingCount, myBrandDetails]
+    [currentFollowerCount, followingCount, myBrandDetails],
   );
 
   const followerProfiles = useMemo(
@@ -642,15 +615,15 @@ function App() {
       { handle: "@flow.archive", name: "Flow Archive" },
       { handle: "@quiet.room", name: "Quiet Room" },
     ],
-    []
+    [],
   );
 
   const followingProfiles = useMemo(
     () =>
       brandProfiles.filter((profile) =>
-        followedBrands.includes(profile.handle)
+        followedBrands.includes(profile.handle),
       ),
-    [brandProfiles, followedBrands]
+    [brandProfiles, followedBrands],
   );
 
   const brandFeed = useMemo(() => {
@@ -705,7 +678,7 @@ function App() {
       ctx.globalCompositeOperation = "source-over";
       window.removeEventListener("mousemove", draw);
       window.removeEventListener("mouseup", stop);
-      if (!drawMetaRef.current.moved && !isCanvasZoomOpen) {
+      if (!drawMetaRef.current.moved) {
         openCanvasZoom();
       }
     };
@@ -715,35 +688,510 @@ function App() {
   };
 
   const openCanvasZoom = () => {
-    setIsCanvasZoomOpen(true);
-  };
+    if (canvasPopupRef.current && !canvasPopupRef.current.closed) {
+      canvasPopupRef.current.focus();
+      return;
+    }
+    const popup = window.open("", "modif-canvas", "width=1280,height=900");
+    if (!popup) return;
+    canvasPopupRef.current = popup;
+    const source = designCanvasRef.current;
+    const dataUrl = source ? source.toDataURL("image/png") : "";
+    const payload = {
+      dataUrl,
+      color: designColor,
+      size: designSize,
+      tool: designTool,
+    };
+    const html = `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Design Canvas</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; font-family: "Pretendard", Arial, sans-serif; background: #f4f4f4; }
+    .page { display: grid; gap: 18px; padding: 28px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+    .header h1 { margin: 0; font-size: 22px; }
+    .header p { margin: 6px 0 0; font-size: 12px; color: #666; }
+    .actions { display: flex; gap: 8px; }
+    .btn { border: 1px solid #111; background: #111; color: #fff; border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+    .btn.secondary { background: #fff; color: #111; }
+    .btn.icon-btn { width: 34px; height: 34px; padding: 0; display: grid; place-items: center; }
+    .btn.icon-btn svg { width: 18px; height: 18px; }
+    .panel { background: #fff; border: 1px solid #e5e5e5; border-radius: 16px; padding: 16px; display: grid; gap: 16px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+    .tool-group { display: inline-flex; gap: 8px; align-items: center; }
+    .tool-btn { border: 1px solid #e5e5e5; background: #fff; color: #111; border-radius: 999px; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; }
+    .tool-btn.active { border-color: #111; background: #111; color: #fff; }
+    .tool-btn svg { width: 16px; height: 16px; }
+    .color-picker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #666; }
+    .color-picker input { width: 28px; height: 28px; border-radius: 8px; border: 1px solid #e5e5e5; padding: 0; background: transparent; cursor: pointer; }
+    .size-control { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #666; }
+    .size-control input { width: 160px; accent-color: #111; }
+    canvas { width: 100%; height: 72vh; max-height: 720px; border-radius: 16px; border: 1px solid #e5e5e5; background: #fff; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <h1>디자인 캔버스</h1>
+        <p>드로잉 후 저장하면 워크벤치로 돌아갑니다.</p>
+      </div>
+      <div class="actions">
+        <button class="btn secondary icon-btn" id="undoBtn" aria-label="되돌리기" title="되돌리기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 8l-4 4 4 4"/>
+            <path d="M3 12h10a6 6 0 1 1 0 12"/>
+          </svg>
+        </button>
+        <button class="btn secondary icon-btn" id="redoBtn" aria-label="되돌리기 취소" title="되돌리기 취소">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 8l4 4-4 4"/>
+            <path d="M21 12H11a6 6 0 1 0 0 12"/>
+          </svg>
+        </button>
+        <button class="btn secondary" id="cancelBtn">돌아가기</button>
+        <button class="btn" id="saveBtn">저장</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="toolbar">
+        <div class="tool-group">
+          <button class="tool-btn" id="brushBtn" title="Brush" aria-label="Brush">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 21h6"/>
+              <path d="M6 19l9-9 3 3-9 9H6z"/>
+              <path d="M14 8l2-2 4 4-2 2"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="eraserBtn" title="Eraser" aria-label="Eraser">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 15l7-7 7 7-4 4H9z"/>
+              <path d="M9 19h8"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="selectBtn" title="Select" aria-label="Select">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/>
+            </svg>
+          </button>
+          <button class="tool-btn" id="fillBtn" title="Fill" aria-label="Fill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 11l6-6 5 5-6 6-5-5z"/>
+              <path d="M4 20h12"/>
+              <path d="M18 14l2 2"/>
+            </svg>
+          </button>
+        </div>
+        <label class="color-picker">색상 <input type="color" id="colorInput" /></label>
+        <label class="size-control">굵기 <input type="range" min="2" max="14" id="sizeInput" /></label>
+      </div>
+      <canvas id="canvas" width="1100" height="720"></canvas>
+    </div>
+  </div>
+  <script>
+    const state = ${JSON.stringify(payload)};
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const brushBtn = document.getElementById("brushBtn");
+    const eraserBtn = document.getElementById("eraserBtn");
+    const selectBtn = document.getElementById("selectBtn");
+    const fillBtn = document.getElementById("fillBtn");
+    const colorInput = document.getElementById("colorInput");
+    const sizeInput = document.getElementById("sizeInput");
+    const saveBtn = document.getElementById("saveBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
 
-  const cancelCanvasZoom = () => {
-    setIsCanvasZoomOpen(false);
-  };
+    let tool = state.tool || "brush";
+    let color = state.color || "#111111";
+    let size = state.size || 6;
+    let selection = {
+      active: false,
+      selecting: false,
+      dragging: false,
+      startX: 0,
+      startY: 0,
+      x: 0,
+      y: 0,
+      w: 0,
+      h: 0,
+      offsetX: 0,
+      offsetY: 0,
+      canvas: null,
+    };
+    const baseCanvas = document.createElement("canvas");
+    baseCanvas.width = canvas.width;
+    baseCanvas.height = canvas.height;
+    const baseCtx = baseCanvas.getContext("2d");
+    const history = [];
+    const redoHistory = [];
+    const maxHistory = 30;
 
-  const closeCanvasZoom = () => {
-    const source = zoomCanvasRef.current;
-    const target = designCanvasRef.current;
-    if (source && target) {
-      const ctx = target.getContext("2d");
-      if (ctx) {
-        ctx.clearRect(0, 0, target.width, target.height);
-        ctx.drawImage(source, 0, 0, target.width, target.height);
+    const applyToolUI = () => {
+      brushBtn.classList.toggle("active", tool === "brush");
+      eraserBtn.classList.toggle("active", tool === "eraser");
+      selectBtn.classList.toggle("active", tool === "select");
+      fillBtn.classList.toggle("active", tool === "fill");
+      colorInput.value = color;
+      sizeInput.value = size;
+      canvas.style.cursor =
+        tool === "select" || tool === "fill" ? "crosshair" : "crosshair";
+      if (tool !== "select" && selection.active) {
+        commitSelection();
+      }
+    };
+
+    const drawImage = (dataUrl) => {
+      if (!dataUrl) return;
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+      img.src = dataUrl;
+    };
+
+    let drawing = false;
+
+    const getCanvasPoint = (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY,
+      };
+    };
+
+    const clampValue = (value, min, max) => Math.max(min, Math.min(value, max));
+
+    const renderSelection = (showBorder = true) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(baseCanvas, 0, 0);
+      if (selection.canvas) {
+        ctx.drawImage(selection.canvas, selection.x, selection.y);
+      }
+      if (showBorder) {
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = "#111";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(selection.x, selection.y, selection.w, selection.h);
+        ctx.restore();
+      }
+    };
+
+    const commitSelection = () => {
+      if (!selection.active || !selection.canvas) return;
+      baseCtx.drawImage(selection.canvas, selection.x, selection.y);
+      selection.active = false;
+      selection.canvas = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(baseCanvas, 0, 0);
+    };
+
+    const startSelection = (point) => {
+      pushHistory();
+      selection.selecting = true;
+      selection.startX = point.x;
+      selection.startY = point.y;
+      selection.w = 0;
+      selection.h = 0;
+      baseCtx.clearRect(0, 0, canvas.width, canvas.height);
+      baseCtx.drawImage(canvas, 0, 0);
+    };
+
+    const finalizeSelection = (point) => {
+      selection.selecting = false;
+      const rawW = point.x - selection.startX;
+      const rawH = point.y - selection.startY;
+      const x = rawW < 0 ? point.x : selection.startX;
+      const y = rawH < 0 ? point.y : selection.startY;
+      const w = Math.abs(rawW);
+      const h = Math.abs(rawH);
+      if (w < 6 || h < 6) {
+        selection.active = false;
+        selection.canvas = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(baseCanvas, 0, 0);
+        return;
+      }
+      selection.active = true;
+      selection.x = clampValue(x, 0, canvas.width);
+      selection.y = clampValue(y, 0, canvas.height);
+      selection.w = clampValue(w, 0, canvas.width - selection.x);
+      selection.h = clampValue(h, 0, canvas.height - selection.y);
+      const selCanvas = document.createElement("canvas");
+      selCanvas.width = selection.w;
+      selCanvas.height = selection.h;
+      const selCtx = selCanvas.getContext("2d");
+      const imgData = baseCtx.getImageData(
+        selection.x,
+        selection.y,
+        selection.w,
+        selection.h,
+      );
+      selCtx.putImageData(imgData, 0, 0);
+      selection.canvas = selCanvas;
+      baseCtx.clearRect(selection.x, selection.y, selection.w, selection.h);
+      renderSelection();
+    };
+
+    const isInsideSelection = (point) =>
+      selection.active &&
+      point.x >= selection.x &&
+      point.x <= selection.x + selection.w &&
+      point.y >= selection.y &&
+      point.y <= selection.y + selection.h;
+
+    const handleSelectionStart = (event) => {
+      const point = getCanvasPoint(event);
+      if (selection.active && isInsideSelection(point)) {
+        pushHistory();
+        selection.dragging = true;
+        selection.offsetX = point.x - selection.x;
+        selection.offsetY = point.y - selection.y;
+        return;
+      }
+      if (selection.active) {
+        commitSelection();
+      }
+      startSelection(point);
+    };
+
+    const handleSelectionMove = (event) => {
+      const point = getCanvasPoint(event);
+      if (selection.dragging) {
+        selection.x = clampValue(point.x - selection.offsetX, 0, canvas.width - selection.w);
+        selection.y = clampValue(point.y - selection.offsetY, 0, canvas.height - selection.h);
+        renderSelection();
+        return;
+      }
+      if (!selection.selecting) return;
+      selection.w = point.x - selection.startX;
+      selection.h = point.y - selection.startY;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(baseCanvas, 0, 0);
+      ctx.save();
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(selection.startX, selection.startY, selection.w, selection.h);
+      ctx.restore();
+    };
+
+    const handleSelectionEnd = (event) => {
+      if (selection.dragging) {
+        selection.dragging = false;
+        renderSelection();
+        return;
+      }
+      if (!selection.selecting) return;
+      const point = getCanvasPoint(event);
+      finalizeSelection(point);
+    };
+
+    const hexToRgba = (hex) => {
+      const value = hex.replace("#", "");
+      const num = parseInt(value.length === 3 ? value.split("").map((c) => c + c).join("") : value, 16);
+      return [num >> 16, (num >> 8) & 255, num & 255, 255];
+    };
+
+    const colorsMatch = (data, index, target) =>
+      data[index] === target[0] &&
+      data[index + 1] === target[1] &&
+      data[index + 2] === target[2] &&
+      data[index + 3] === target[3];
+
+    const fillAtPoint = (event) => {
+      pushHistory();
+      const point = getCanvasPoint(event);
+      const x = Math.floor(point.x);
+      const y = Math.floor(point.y);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      const targetIndex = (y * canvas.width + x) * 4;
+      const targetColor = [
+        data[targetIndex],
+        data[targetIndex + 1],
+        data[targetIndex + 2],
+        data[targetIndex + 3],
+      ];
+      const fillColor = hexToRgba(color);
+      if (colorsMatch(data, targetIndex, fillColor)) return;
+      const stack = [[x, y]];
+      while (stack.length) {
+        const [cx, cy] = stack.pop();
+        if (cx < 0 || cy < 0 || cx >= canvas.width || cy >= canvas.height) continue;
+        const idx = (cy * canvas.width + cx) * 4;
+        if (!colorsMatch(data, idx, targetColor)) continue;
+        data[idx] = fillColor[0];
+        data[idx + 1] = fillColor[1];
+        data[idx + 2] = fillColor[2];
+        data[idx + 3] = fillColor[3];
+        stack.push([cx + 1, cy]);
+        stack.push([cx - 1, cy]);
+        stack.push([cx, cy + 1]);
+        stack.push([cx, cy - 1]);
+      }
+      ctx.putImageData(imageData, 0, 0);
+      if (selection.active) {
+        selection.active = false;
+        selection.canvas = null;
+      }
+      baseCtx.clearRect(0, 0, canvas.width, canvas.height);
+      baseCtx.drawImage(canvas, 0, 0);
+    };
+
+    const startDraw = (event) => {
+      if (tool === "select") {
+        handleSelectionStart(event);
+        return;
+      }
+      if (tool === "fill") {
+        if (selection.active) {
+          commitSelection();
+        }
+        fillAtPoint(event);
+        return;
+      }
+      drawing = true;
+      pushHistory();
+      const point = getCanvasPoint(event);
+      const x = point.x;
+      const y = point.y;
+      ctx.lineCap = "round";
+      ctx.lineWidth = size;
+      if (tool === "eraser") {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.strokeStyle = "rgba(0,0,0,1)";
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = color;
+      }
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    };
+
+    const moveDraw = (event) => {
+      if (tool === "select") {
+        handleSelectionMove(event);
+        return;
+      }
+      if (!drawing) return;
+      const point = getCanvasPoint(event);
+      const x = point.x;
+      const y = point.y;
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    };
+
+    const stopDraw = (event) => {
+      if (tool === "select") {
+        handleSelectionEnd(event);
+        return;
+      }
+      drawing = false;
+      ctx.globalCompositeOperation = "source-over";
+    };
+
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("mousemove", moveDraw);
+    window.addEventListener("mouseup", stopDraw);
+
+    brushBtn.addEventListener("click", () => { tool = "brush"; applyToolUI(); });
+    eraserBtn.addEventListener("click", () => { tool = "eraser"; applyToolUI(); });
+    selectBtn.addEventListener("click", () => { tool = "select"; applyToolUI(); });
+    fillBtn.addEventListener("click", () => { tool = "fill"; applyToolUI(); });
+    colorInput.addEventListener("input", (e) => { color = e.target.value; });
+    sizeInput.addEventListener("input", (e) => { size = Number(e.target.value); applyToolUI(); });
+    undoBtn.addEventListener("click", () => {
+      if (!history.length) return;
+      selection.active = false;
+      selection.canvas = null;
+      const snapshot = history.pop();
+      const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      redoHistory.push(current);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(snapshot, 0, 0);
+      baseCtx.clearRect(0, 0, canvas.width, canvas.height);
+      baseCtx.putImageData(snapshot, 0, 0);
+    });
+    redoBtn.addEventListener("click", () => {
+      if (!redoHistory.length) return;
+      selection.active = false;
+      selection.canvas = null;
+      const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      history.push(current);
+      const snapshot = redoHistory.pop();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(snapshot, 0, 0);
+      baseCtx.clearRect(0, 0, canvas.width, canvas.height);
+      baseCtx.putImageData(snapshot, 0, 0);
+    });
+
+    saveBtn.addEventListener("click", () => {
+      const dataUrl = canvas.toDataURL("image/png");
+      window.opener && window.opener.postMessage({ type: "modif-canvas-save", dataUrl }, "*");
+      window.close();
+    });
+
+    cancelBtn.addEventListener("click", () => {
+      window.opener && window.opener.postMessage({ type: "modif-canvas-cancel" }, "*");
+      window.close();
+    });
+
+    window.addEventListener("beforeunload", () => {
+      window.opener && window.opener.postMessage({ type: "modif-canvas-close" }, "*");
+    });
+
+    drawImage(state.dataUrl);
+    applyToolUI();
+
+    function pushHistory() {
+      const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      history.push(snapshot);
+      redoHistory.length = 0;
+      if (history.length > maxHistory) {
+        history.shift();
       }
     }
-    setIsCanvasZoomOpen(false);
+  </script>
+</body>
+</html>`;
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
   };
 
-  const getCursorStyle = () => {
-    const size = Math.max(12, Math.round(designSize * 2));
-    const brushSize = size - 2;
-    const half = Math.round(size / 2);
-    const rectX = 1;
-    const rectY = 1;
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' shape-rendering='crispEdges'><rect x='${rectX}' y='${rectY}' width='${brushSize}' height='${brushSize}' fill='none' stroke='%23111111' stroke-width='1'/></svg>`;
-    const encoded = encodeURIComponent(svg);
-    return `url("data:image/svg+xml;utf8,${encoded}") ${half} ${half}, crosshair`;
+  const saveTempDesign = () => {
+    const canvas = designCanvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    const nextId = `temp-${Date.now()}`;
+    setTempDesigns((prev) => [
+      {
+        id: nextId,
+        name: "임시 스케치",
+        design_prompt: prompt.trim() || "임시 스케치",
+        design_img_url: dataUrl,
+        isTemp: true,
+      },
+      ...prev,
+    ]);
+  };
+
+  const removeDesign = (designId, isTemp) => {
+    if (isTemp) {
+      setTempDesigns((prev) => prev.filter((item) => item.id !== designId));
+      return;
+    }
+    setGeneratedDesigns((prev) => prev.filter((item) => item.id !== designId));
   };
 
   const resetFilters = () => {
@@ -813,8 +1261,8 @@ function App() {
       prev.map((item) =>
         item.liked
           ? { ...item, liked: false, likes: Math.max(0, item.likes - 1) }
-          : item
-      )
+          : item,
+      ),
     );
   };
 
@@ -851,17 +1299,15 @@ function App() {
     setSelectedStyleIds((prev) =>
       prev.includes(clothingId)
         ? prev.filter((id) => id !== clothingId)
-        : [...prev, clothingId]
+        : [...prev, clothingId],
     );
   };
 
   const finalizeOnboarding = () => {
     const nextStyleTags = Array.from(
       new Set(
-        selectedStyleIds
-          .map((id) => clothingMap[id]?.style)
-          .filter(Boolean)
-      )
+        selectedStyleIds.map((id) => clothingMap[id]?.style).filter(Boolean),
+      ),
     );
     setUserProfile((prev) => ({
       ...prev,
@@ -877,7 +1323,7 @@ function App() {
         if (!selectedStyleIds.includes(item.clothing_id)) return item;
         if (item.liked) return item;
         return { ...item, liked: true, likes: item.likes + 1 };
-      })
+      }),
     );
     setIsLoggedIn(true);
     setOnboardingOpen(false);
@@ -890,22 +1336,30 @@ function App() {
   }, [darkMode]);
 
   useEffect(() => {
-    window.localStorage.setItem(
-      "modifLoggedIn",
-      isLoggedIn ? "true" : "false"
-    );
+    window.localStorage.setItem("modifLoggedIn", isLoggedIn ? "true" : "false");
   }, [isLoggedIn]);
 
   useEffect(() => {
-    if (!isCanvasZoomOpen) return;
-    const source = designCanvasRef.current;
-    const target = zoomCanvasRef.current;
-    if (!source || !target) return;
-    const ctx = target.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, target.width, target.height);
-    ctx.drawImage(source, 0, 0, target.width, target.height);
-  }, [isCanvasZoomOpen]);
+    const handleMessage = (event) => {
+      const payload = event?.data;
+      if (!payload || typeof payload !== "object") return;
+      if (payload.type !== "modif-canvas-save") return;
+      if (!payload.dataUrl) return;
+      const target = designCanvasRef.current;
+      if (!target) return;
+      const ctx = target.getContext("2d");
+      if (!ctx) return;
+      const image = new Image();
+      image.onload = () => {
+        ctx.clearRect(0, 0, target.width, target.height);
+        ctx.drawImage(image, 0, 0, target.width, target.height);
+      };
+      image.src = payload.dataUrl;
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   useEffect(() => {
     document.body.classList.toggle("intro-open", introOpen);
@@ -916,7 +1370,9 @@ function App() {
 
   useEffect(() => {
     if (!introOpen) return;
-    const sections = document.querySelectorAll(".intro-section, .intro-actions");
+    const sections = document.querySelectorAll(
+      ".intro-section, .intro-actions",
+    );
     if (!sections.length) return;
 
     const observer = new IntersectionObserver(
@@ -927,15 +1383,15 @@ function App() {
           }
         });
       },
-      { threshold: 0.55 }
+      { threshold: 0.55 },
     );
 
     sections.forEach((section) => observer.observe(section));
 
-    return () => {
-      observer.disconnect();
-    };
-  }, [introOpen]);
+      return () => {
+        observer.disconnect();
+      };
+    }, [introOpen]);
 
   const openClothingDetail = (clothingId) => {
     const funding = fundings.find((entry) => entry.clothing_id === clothingId);
@@ -967,7 +1423,7 @@ function App() {
     }
     if (notice.target.type === "brand") {
       const profile = brandProfiles.find(
-        (item) => item.handle === notice.target.handle
+        (item) => item.handle === notice.target.handle,
       );
       if (profile) {
         openBrandProfile(profile);
@@ -986,11 +1442,11 @@ function App() {
                 ...profile,
                 followerCount: Math.max(
                   0,
-                  profile.followerCount + (isFollowed ? -1 : 1)
+                  profile.followerCount + (isFollowed ? -1 : 1),
                 ),
               }
-            : profile
-        )
+            : profile,
+        ),
       );
       return isFollowed
         ? prev.filter((item) => item !== handle)
@@ -1051,7 +1507,10 @@ function App() {
                         />
                         <div className="profile-icon">
                           {signupDraft.base_photo_url ? (
-                            <img src={signupDraft.base_photo_url} alt="Profile" />
+                            <img
+                              src={signupDraft.base_photo_url}
+                              alt="Profile"
+                            />
                           ) : (
                             <div className="avatar-placeholder">👤</div>
                           )}
@@ -1097,7 +1556,7 @@ function App() {
                             onChange={(event) =>
                               updateSignupField(
                                 "passwordConfirm",
-                                event.target.value
+                                event.target.value,
                               )
                             }
                             placeholder="비밀번호 재입력"
@@ -1157,7 +1616,8 @@ function App() {
                             </label>
                           </div>
                           <div className="ai-hint">
-                            밝은 배경에서 정면 자세로 촬영된 이미지를 권장합니다.
+                            밝은 배경에서 정면 자세로 촬영된 이미지를
+                            권장합니다.
                           </div>
                         </div>
                       ) : (
@@ -1171,7 +1631,7 @@ function App() {
                                 onChange={(event) =>
                                   updateSignupMeasurement(
                                     field.key,
-                                    event.target.value
+                                    event.target.value,
                                   )
                                 }
                               />
@@ -1214,9 +1674,7 @@ function App() {
                           key={item.id}
                           type="button"
                           className={`style-pick-card ${
-                            selectedStyleIds.includes(item.id)
-                              ? "selected"
-                              : ""
+                            selectedStyleIds.includes(item.id) ? "selected" : ""
                           }`}
                           onClick={() => toggleStyleSelection(item.id)}
                         >
@@ -1287,29 +1745,37 @@ function App() {
               <div className="intro-sections">
                 <article className="intro-section" style={{ "--delay": "0ms" }}>
                   <span className="intro-keyword">Create</span>
-                  <h3 className="intro-heading">상상, 현실의 패턴이 되다.</h3>
+                  <h3 className="intro-heading">상상이 디자인이 되는 순간</h3>
                   <p className="intro-desc">
-                    AI 스튜디오에서 단 한 줄의 텍스트로
+                    텍스트 한 줄로 아이디어를 시각화하고,
                     <br />
-                    당신의 상상을 구체적인 실루엣으로 그려냅니다.
+                    누구나 디자이너가 되는 경험을 제공합니다.
                   </p>
                 </article>
-                <article className="intro-section" style={{ "--delay": "180ms" }}>
+                <article
+                  className="intro-section"
+                  style={{ "--delay": "180ms" }}
+                >
                   <span className="intro-keyword">Invest</span>
-                  <h3 className="intro-heading">당신의 안목, 자산이 되다.</h3>
+                  <h3 className="intro-heading">나의 안목이 자산이 되다</h3>
                   <p className="intro-desc">
-                    전 세계 창작자들의 가치를 가장 먼저 발견하고,
+                    가능성 있는 브랜드를 가장 먼저 발견하고,
                     <br />
-                    미래의 유니콘 브랜드에 투자하세요.
+                    단순 소비를 넘어 성장에 투자하세요.
                   </p>
                 </article>
-                <article className="intro-section" style={{ "--delay": "360ms" }}>
+                <article
+                  className="intro-section"
+                  style={{ "--delay": "360ms" }}
+                >
                   <span className="intro-keyword">Fit</span>
-                  <h3 className="intro-heading">입지 않아도, 완벽하게.</h3>
+                  <h3 className="intro-heading">
+                    미리 입어보는 가상 피팅
+                  </h3>
                   <p className="intro-desc">
-                    내 체형 데이터로 경험하는 0.1mm의 디테일.
+                    옷을 직접 레이어링 해보며
                     <br />
-                    가상 피팅의 새로운 기준입니다.
+                    나에게 꼭 맞는 핏과 스타일을 미리 경험해 보세요.
                   </p>
                 </article>
               </div>
@@ -1527,7 +1993,7 @@ function App() {
                 <div className="notif-panel" role="menu">
                   <div className="notif-header">
                     <div className="notif-title">
-                      <strong>Notifications</strong>
+                      <strong>알림</strong>
                       <span>{notifications.length} new</span>
                     </div>
                   </div>
@@ -1557,12 +2023,14 @@ function App() {
                                 prev.map((notice) =>
                                   notice.id === item.id
                                     ? { ...notice, removing: true }
-                                    : notice
-                                )
+                                    : notice,
+                                ),
                               );
                               window.setTimeout(() => {
                                 setNotifications((prev) =>
-                                  prev.filter((notice) => notice.id !== item.id)
+                                  prev.filter(
+                                    (notice) => notice.id !== item.id,
+                                  ),
                                 );
                               }, 220);
                             }}
@@ -1601,7 +2069,7 @@ function App() {
           <section className="content">
             <div className="page-title">
               <h1>Discover</h1>
-              <p>Find your next signature look</p>
+              <p>취향을 넘어선 새로운 브랜드의 발견</p>
             </div>
 
             <div className="tag-row">
@@ -1754,7 +2222,7 @@ function App() {
                 const progress = clamp(
                   Math.round((item.current_amount / item.goal_amount) * 100),
                   0,
-                  100
+                  100,
                 );
 
                 return (
@@ -1793,7 +2261,7 @@ function App() {
                           <h3>{item.brand}</h3>
                           <span className="price-inline">
                             {currency.format(
-                              clothingMap[item.clothing_id]?.price || 0
+                              clothingMap[item.clothing_id]?.price || 0,
                             )}
                           </span>
                         </div>
@@ -1891,7 +2359,7 @@ function App() {
                                 <span className="price-label">Price</span>
                                 <strong className="price-strong">
                                   {currency.format(
-                                    detailItem.clothing?.price || 0
+                                    detailItem.clothing?.price || 0,
                                   )}
                                 </strong>
                               </div>
@@ -1972,11 +2440,11 @@ function App() {
                                 <strong>
                                   목표{" "}
                                   {currency.format(
-                                    detailItem.funding.goal_amount
+                                    detailItem.funding.goal_amount,
                                   )}{" "}
                                   · 현재{" "}
                                   {currency.format(
-                                    detailItem.funding.current_amount
+                                    detailItem.funding.current_amount,
                                   )}
                                 </strong>
                                 <div className="story-bar">
@@ -1999,7 +2467,7 @@ function App() {
                               {comments.filter(
                                 (comment) =>
                                   comment.clothing_id ===
-                                  detailItem.clothing?.id
+                                  detailItem.clothing?.id,
                               ).length === 0 ? (
                                 <div className="comment-empty">
                                   첫 피드백을 등록해보세요
@@ -2009,7 +2477,7 @@ function App() {
                                   .filter(
                                     (comment) =>
                                       comment.clothing_id ===
-                                      detailItem.clothing?.id
+                                      detailItem.clothing?.id,
                                   )
                                   .map((comment) => (
                                     <div
@@ -2033,7 +2501,7 @@ function App() {
                                             >
                                               ★
                                             </span>
-                                          )
+                                          ),
                                         )}
                                       </div>
                                       <div className="comment-body">
@@ -2049,7 +2517,7 @@ function App() {
                                           </div>
                                           <span className="comment-time">
                                             {formatRelative(
-                                              comment.created_at || new Date()
+                                              comment.created_at || new Date(),
                                             )}
                                           </span>
                                         </div>
@@ -2064,7 +2532,7 @@ function App() {
                                             setCommentMenuId((prev) =>
                                               prev === comment.id
                                                 ? null
-                                                : comment.id
+                                                : comment.id,
                                             )
                                           }
                                         >
@@ -2091,8 +2559,8 @@ function App() {
                                                 setComments((prev) =>
                                                   prev.filter(
                                                     (item) =>
-                                                      item.id !== comment.id
-                                                  )
+                                                      item.id !== comment.id,
+                                                  ),
                                                 );
                                                 setCommentMenuId(null);
                                               }}
@@ -2174,97 +2642,10 @@ function App() {
 
         {activeTab === "studio" && (
           <section className="content">
-            {isCanvasZoomOpen ? (
-              <div className="studio-canvas-page">
-                <div className="studio-canvas-header">
-                  <div>
-                    <h1>디자인 캔버스</h1>
-                    <p>드로잉 후 저장하면 워크벤치로 돌아갑니다.</p>
-                  </div>
-                  <div className="studio-canvas-actions">
-                    <button
-                      type="button"
-                      className="secondary"
-                      onClick={cancelCanvasZoom}
-                    >
-                      돌아가기
-                    </button>
-                    <button
-                      type="button"
-                      className="primary"
-                      onClick={closeCanvasZoom}
-                    >
-                      저장
-                    </button>
-                  </div>
-                </div>
-                <div className="panel studio-canvas-panel">
-                  <div className="design-toolbar">
-                    <div className="tool-group">
-                      <button
-                        type="button"
-                        className={`tool-btn ${
-                          designTool === "brush" ? "active" : ""
-                        }`}
-                        onClick={() => setDesignTool("brush")}
-                        aria-label="Brush"
-                        title="Brush"
-                      >
-                        <Pencil size={16} strokeWidth={1.6} />
-                      </button>
-                      <button
-                        type="button"
-                        className={`tool-btn ${
-                          designTool === "eraser" ? "active" : ""
-                        }`}
-                        onClick={() => setDesignTool("eraser")}
-                        aria-label="Eraser"
-                        title="Eraser"
-                      >
-                        <Eraser size={16} strokeWidth={1.6} />
-                      </button>
-                    </div>
-                    <label className="color-picker">
-                      색상
-                      <input
-                        type="color"
-                        value={designColor}
-                        onChange={(event) =>
-                          setDesignColor(event.target.value)
-                        }
-                        aria-label="Brush color"
-                      />
-                    </label>
-                    <label className="size-control">
-                      굵기
-                      <input
-                        type="range"
-                        min="2"
-                        max="14"
-                        value={designSize}
-                        onChange={(event) =>
-                          setDesignSize(Number(event.target.value))
-                        }
-                      />
-                    </label>
-                  </div>
-                  <canvas
-                    ref={zoomCanvasRef}
-                    className="design-canvas zoom"
-                    style={{ cursor: getCursorStyle() }}
-                    width="980"
-                    height="620"
-                    onMouseDown={handleCanvasDraw}
-                    aria-label="Zoomed design canvas"
-                  />
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="page-title page-title-row">
+            <div className="page-title page-title-row">
                   <div>
                     <h1>Studio</h1>
-                    <p>창작자의 작업실 - AI 디자인과 피팅 엔진을 생성합니다.</p>
+                    <p>상상이 현실이 되는 크리에이티브 공간</p>
                   </div>
                   <div className="page-title-actions">
                     <button
@@ -2283,16 +2664,26 @@ function App() {
                       <div>
                         <h3>디자인 워크벤치</h3>
                         <p className="studio-sub">
-                          스케치와 프롬프트를 함께 사용해 AI 디자인을 생성합니다.
+                          스케치와 프롬프트를 함께 사용해 AI 디자인을
+                          생성합니다.
                         </p>
                       </div>
-                      <button
-                        className="primary"
-                        type="button"
-                        onClick={generateDesign}
-                      >
-                        AI 디자인 생성
-                      </button>
+                      <div className="studio-workbench-actions">
+                        <button
+                          className="secondary"
+                          type="button"
+                          onClick={saveTempDesign}
+                        >
+                          임시 저장
+                        </button>
+                        <button
+                          className="primary"
+                          type="button"
+                          onClick={generateDesign}
+                        >
+                          AI 디자인 생성
+                        </button>
+                      </div>
                     </div>
                     <div className="workbench-body">
                       <div className="workbench-canvas">
@@ -2349,35 +2740,20 @@ function App() {
                           <canvas
                             ref={designCanvasRef}
                             className="design-canvas"
-                            style={{ cursor: getCursorStyle() }}
+                            style={{ cursor: "crosshair" }}
                             width="720"
                             height="420"
                             onMouseDown={handleCanvasDraw}
                             aria-label="Design canvas"
                           />
                           <p className="design-hint">
-                            {designCategory} 실루엣을 드로잉하세요. 클릭하면 전체
-                            화면으로 이동합니다.
+                            {designCategory} 실루엣을 드로잉하세요. 클릭하면
+                            전체 화면으로 이동합니다.
                           </p>
                         </div>
                       </div>
                       <div className="workbench-prompt">
                         <div className="design-selects">
-                          <label className="field">
-                            옷 종류
-                            <select
-                              value={designCategory}
-                              onChange={(event) =>
-                                setDesignCategory(event.target.value)
-                              }
-                            >
-                              {["상의", "하의", "아우터", "원피스"].map((item) => (
-                                <option key={item} value={item}>
-                                  {item}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
                           <label className="field">
                             성별
                             <select
@@ -2386,11 +2762,37 @@ function App() {
                                 setDesignGender(event.target.value)
                               }
                             >
-                              {["Unisex", "Woman", "Man"].map((item) => (
+                              {["Mens", "Womens", "Unisex"].map((item) => (
                                 <option key={item} value={item}>
                                   {item}
                                 </option>
                               ))}
+                            </select>
+                          </label>
+                          <label className="field">
+                            옷 종류
+                            <select
+                              value={designCategory}
+                              onChange={(event) => {
+                                const nextCategory = event.target.value;
+                                setDesignCategory(nextCategory);
+                                const nextOptions =
+                                  designLengthOptions[nextCategory] || [];
+                                if (
+                                  nextOptions.length &&
+                                  !nextOptions.includes(designLength)
+                                ) {
+                                  setDesignLength(nextOptions[0]);
+                                }
+                              }}
+                            >
+                              {["상의", "하의", "아우터", "원피스"].map(
+                                (item) => (
+                                  <option key={item} value={item}>
+                                    {item}
+                                  </option>
+                                ),
+                              )}
                             </select>
                           </label>
                           <label className="field">
@@ -2401,11 +2803,13 @@ function App() {
                                 setDesignLength(event.target.value)
                               }
                             >
-                              {["크롭", "숏", "미디", "롱"].map((item) => (
-                                <option key={item} value={item}>
-                                  {item}
-                                </option>
-                              ))}
+                              {(designLengthOptions[designCategory] || []).map(
+                                (item) => (
+                                  <option key={item} value={item}>
+                                    {item}
+                                  </option>
+                                ),
+                              )}
                             </select>
                           </label>
                         </div>
@@ -2441,64 +2845,7 @@ function App() {
                       </div>
                     </div>
                   </div>
-
-                  <div className="panel studio-lab">
-                    <div className="subsection">
-                      <h4>마네킹 프리셋 테스트</h4>
-                      <div className="pill-group">
-                        {mannequins.map((mannequin) => (
-                          <button
-                            key={mannequin.id}
-                            type="button"
-                            className={`pill ${
-                              selectedMannequin === mannequin.id ? "active" : ""
-                            }`}
-                            onClick={() => setSelectedMannequin(mannequin.id)}
-                          >
-                            {mannequin.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mannequin-card">
-                        <div className="mannequin-avatar" />
-                        <div>
-                          <strong>
-                            {
-                              mannequins.find(
-                                (item) => item.id === selectedMannequin
-                              )?.label
-                            }
-                          </strong>
-                          <p>
-                            {
-                              mannequins.find(
-                                (item) => item.id === selectedMannequin
-                              )?.desc
-                            }
-                          </p>
-                          <p>Layer Order: Base → Mid → Outer</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="subsection">
-                      <h4>브랜드 런칭</h4>
-                      <p>
-                        현재 디자인 수:{" "}
-                        <strong>{brand.clothes_count} / 10</strong>
-                      </p>
-                      <button
-                        className="secondary"
-                        type="button"
-                        onClick={handleLaunch}
-                      >
-                        Discover로 전송
-                      </button>
-                      {studioNotice && <p className="notice">{studioNotice}</p>}
-                    </div>
-                  </div>
                 </div>
-              </>
-            )}
           </section>
         )}
 
@@ -2507,9 +2854,7 @@ function App() {
             <div className="page-title page-title-row">
               <div>
                 <h1>My Fitting</h1>
-                <p>
-                  나만의 가상 드레스룸 - 레이어링과 AI 매칭을 동시에 확인합니다.
-                </p>
+                <p>데이터로 완성하는 나만의 가상 드레스룸</p>
               </div>
               <div className="page-title-actions">
                 <button
@@ -2582,24 +2927,6 @@ function App() {
                   </div>
                   <p>{fitAnalysis.message}</p>
                 </div>
-
-                <div className="panel-block">
-                  <h3>대표 사진 스케일</h3>
-                  <label className="slider">
-                    <span>pixelRatio</span>
-                    <input
-                      type="range"
-                      min="0.8"
-                      max="1.2"
-                      step="0.02"
-                      value={pixelRatio}
-                      onChange={(event) =>
-                        setPixelRatio(Number(event.target.value))
-                      }
-                    />
-                    <span>{pixelRatio.toFixed(2)}</span>
-                  </label>
-                </div>
               </div>
             </div>
 
@@ -2629,8 +2956,8 @@ function App() {
                                   liked: false,
                                   likes: Math.max(0, funding.likes - 1),
                                 }
-                              : funding
-                          )
+                              : funding,
+                          ),
                         );
                       }}
                     >
@@ -2641,7 +2968,7 @@ function App() {
                       className="closet-link"
                       onClick={() => {
                         const funding = fundings.find(
-                          (entry) => entry.clothing_id === item.id
+                          (entry) => entry.clothing_id === item.id,
                         );
                         if (!funding) return;
                         setActiveTab("discover");
@@ -2660,7 +2987,7 @@ function App() {
                       onClick={() => {
                         setFocusClothingId(item.id);
                         setFittingLayers((prev) =>
-                          prev.includes(item.id) ? prev : [...prev, item.id]
+                          prev.includes(item.id) ? prev : [...prev, item.id],
                         );
                       }}
                     >
@@ -2709,7 +3036,7 @@ function App() {
             <div className="portfolio-head">
               <div className="page-title">
                 <h1>Portfolio</h1>
-                <p>나의 패션 자산 대시보드 - 투자와 창작 기록을 관리합니다.</p>
+                <p>안목이 자산이 되는 패션 투자 대시보드</p>
               </div>
               <div className="portfolio-tabs">
                 <button
@@ -2734,7 +3061,7 @@ function App() {
             </div>
 
             {portfolioTab === "investee" && (
-              <div className="portfolio-grid">
+              <div className="portfolio-grid portfolio-brands-layout">
                 <div className="panel">
                   <h3>My Brands</h3>
                   <div className="chart">
@@ -2769,74 +3096,9 @@ function App() {
                   </div>
                 </div>
 
-                <div className="panel">
-                  <h3>Followers & Following</h3>
-                  <div className="follow-stats">
-                    <button
-                      type="button"
-                      className="follow-stat-btn"
-                      onClick={() => setPortfolioListOpen("followers")}
-                    >
-                      <strong>{currentFollowerCount}</strong>
-                      <span>Followers</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="follow-stat-btn"
-                      onClick={() => setPortfolioListOpen("following")}
-                    >
-                      <strong>{followingCount}</strong>
-                      <span>Following</span>
-                    </button>
-                  </div>
-                  <div className="follow-chart">
-                    <div className="follow-chart-grid">
-                      <div className="follow-chart-y">
-                        {followerTicks.map((tick) => (
-                          <span key={tick}>{tick}</span>
-                        ))}
-                      </div>
-                      <div className="follow-chart-scroll">
-                        <div
-                          className="follow-chart-canvas"
-                          style={{ width: `${followerChartWidth}px` }}
-                        >
-                          <svg
-                            viewBox={`0 0 ${followerChartWidth} 120`}
-                            aria-hidden="true"
-                          >
-                            <polyline
-                              points={followerChartPoints}
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          <div className="follow-chart-x">
-                            {followerSeries.map((item, index) => (
-                              <span
-                                key={item.date}
-                                style={{
-                                  left: `${index * followerChartStep}px`,
-                                }}
-                              >
-                                {item.date}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="follow-chart-meta">
-                      <span>최근 증가</span>
-                      <strong>
-                        +{currentFollowerCount - followerSeries[0].value}
-                      </strong>
-                    </div>
-                  </div>
-                  <div className="follow-actions">
+                <div className="portfolio-side">
+                  <div className="panel follow-cta">
+                    <h3>Brand Page</h3>
                     <button
                       type="button"
                       className="secondary"
@@ -2844,6 +3106,74 @@ function App() {
                     >
                       내 브랜드 페이지
                     </button>
+                  </div>
+                  <div className="panel">
+                    <h3>Followers & Following</h3>
+                    <div className="follow-stats">
+                      <button
+                        type="button"
+                        className="follow-stat-btn"
+                        onClick={() => setPortfolioListOpen("followers")}
+                      >
+                        <strong>{currentFollowerCount}</strong>
+                        <span>Followers</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="follow-stat-btn"
+                        onClick={() => setPortfolioListOpen("following")}
+                      >
+                        <strong>{followingCount}</strong>
+                        <span>Following</span>
+                      </button>
+                    </div>
+                    <div className="follow-chart">
+                      <div className="follow-chart-grid">
+                        <div className="follow-chart-y">
+                          {followerTicks.map((tick) => (
+                            <span key={tick}>{tick}</span>
+                          ))}
+                        </div>
+                        <div className="follow-chart-scroll">
+                          <div
+                            className="follow-chart-canvas"
+                            style={{ width: `${followerChartWidth}px` }}
+                          >
+                            <svg
+                              viewBox={`0 0 ${followerChartWidth} 120`}
+                              aria-hidden="true"
+                            >
+                              <polyline
+                                points={followerChartPoints}
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            <div className="follow-chart-x">
+                              {followerSeries.map((item, index) => (
+                                <span
+                                  key={item.date}
+                                  style={{
+                                    left: `${index * followerChartStep}px`,
+                                  }}
+                                >
+                                  {item.date}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="follow-chart-meta">
+                        <span>최근 증가</span>
+                        <strong>
+                          +{currentFollowerCount - followerSeries[0].value}
+                        </strong>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2872,7 +3202,7 @@ function App() {
                             className="ghost"
                             onClick={() =>
                               setInvestments((prev) =>
-                                prev.filter((entry) => entry.id !== item.id)
+                                prev.filter((entry) => entry.id !== item.id),
                               )
                             }
                           >
@@ -3194,7 +3524,7 @@ function App() {
                           event.target.value
                             .split(",")
                             .map((item) => item.trim())
-                            .filter(Boolean)
+                            .filter(Boolean),
                         )
                       }
                     />
@@ -3266,7 +3596,7 @@ function App() {
                 : "로그인이 필요합니다"}
             </h3>
             {authModal.mode === "logout-confirm" && (
-              <p>로그아웃하면 Discover 외에는 접근할 수 없습니다.</p>
+              <p>로그아웃 시 일부 기능 이용이 제한됩니다.</p>
             )}
             {authModal.mode === "login-required" && (
               <p>로그인 후 이용할 수 있는 기능입니다.</p>
@@ -3387,24 +3717,39 @@ function App() {
             >
               ×
             </button>
-            <h3>Generated Gallery</h3>
+            <div className="studio-gallery-header">
+              <h3>Generated Gallery</h3>
+              <span className="studio-gallery-count">
+                현재 디자인 수: {generatedDesigns.length + tempDesigns.length} /
+                10
+              </span>
+            </div>
             <div className="gallery-grid">
-              {generatedDesigns.length === 0 && (
+              {generatedDesigns.length + tempDesigns.length === 0 && (
                 <p className="empty">아직 생성된 디자인이 없습니다.</p>
               )}
-              {generatedDesigns.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="gallery-card"
-                  style={{ animationDelay: `${index * 60}ms` }}
-                >
-                  <img src={item.design_img_url} alt={item.name} />
-                  <div>
-                    <strong>{item.name}</strong>
-                    <span>{item.design_prompt}</span>
+              {[...tempDesigns, ...generatedDesigns]
+                .slice(0, 10)
+                .map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="gallery-card"
+                    style={{ animationDelay: `${index * 60}ms` }}
+                  >
+                    <img src={item.design_img_url} alt={item.name} />
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span>{item.design_prompt}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => removeDesign(item.id, item.isTemp)}
+                    >
+                      삭제
+                    </button>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>
