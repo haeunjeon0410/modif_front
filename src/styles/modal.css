@@ -15,7 +15,7 @@
   border-radius: 20px;
   max-width: 1090px; /* 아까 넓힌 크기 유지 */
   width: 90%;
-  padding: 10px; /* 내부 여백 */
+  padding: 0px; /* 내부 여백 */
 
   position: relative;
   display: flex;
@@ -25,7 +25,7 @@
   margin: auto;
 
   /* 높이 설정 정리 (화면의 85%만큼만 커지게) */
-  max-height: 82vh;   /* ⭕ 최대 높이만 제한 */
+  max-height: 78vh;   /* ⭕ 최대 높이만 제한 */
   padding-bottom: 72px;
   overflow: hidden;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
@@ -33,12 +33,27 @@
 
 
 
+
+.album-modal-content {
+  width: min(980px, 92vw);
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 32px;
-  margin-bottom: 40px;
+  margin-bottom: 20px;
+}
+
+.modal-header .brand-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
 }
 /* modal.css */
 
@@ -46,10 +61,16 @@
 
 .modal-body {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 50px;
-  margin-top: 50px;
+  margin-top: 20px;
 
+}
+
+.album-modal-content .album {
+  max-height: 48vh;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 
@@ -59,10 +80,12 @@
   width: 40%;
 
   position: relative;
-  display: flex;
-  align-items: center;
+    display: flex;
+  flex-direction: column;
   justify-content: center;
-  background: #f7f7f7;
+  height: 100%;
+  align-items: center;
+  background: transparent;
   border-radius: 8px;
   overflow: hidden;
   padding: 0;
@@ -140,14 +163,16 @@
 
 .detail-scroll {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   max-width: 550px;   /* 🔥 이게 핵심 */
   margin-right: auto; /* 좌측에 고정 */
 }
 
 
 .detail-scroll .detail-block {
-  padding: 8px 0 24px;
-  gap: 22px;
+  padding: 12px 0 26px;
+  gap: 26px;
   overflow: visible;
 }
 
@@ -272,8 +297,8 @@
   flex-direction: column;
   min-height: 0;
   justify-content: flex-start;
-  padding: 8px 0 24px;
-  gap: 22px;
+  padding: 12px 0 26px;
+  gap: 26px;
 }
 
 .detail-mode-row {
@@ -323,6 +348,21 @@
 
 .detail-block p {
   line-height: 1.7;
+}
+
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.detail-tag {
+  border: 1px solid var(--border);
+  background: #f3f3f3;
+  border-radius: 999px;
+  padding: 4px 8px;
 }
 
 .detail-title-row {
@@ -642,7 +682,7 @@
   background: #f4f4f4;
 }
 
-.comment-body span {
+.comment-body span:not(.creator-badge) {
   color: var(--muted);
 }
 
@@ -664,16 +704,21 @@
 }
 
 .comment-form.compact {
-  max-width: 100%;
-  margin-top: auto;
   position: sticky;
   bottom: 0;
+
   background: #ffffff;
+  padding: 14px;
+  border-radius: 16px;
+  z-index: 2;
+
+  margin-top: auto; /* 🔥 위 콘텐츠 밀어냄 */
 }
+
 
 .comment-input-row {
   display: grid;
-  grid-template-columns: 112px 1fr;
+  grid-template-columns: 93px 1fr;
   gap: 6px;
   align-items: center;
 }
@@ -750,4 +795,24 @@
 .modal-stack {
   max-width: 1000px;
   margin: 50px auto 0; /* 🔥 bottom 제거 */
+}
+
+.comment-list.compact {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 96px; /* 입력창 높이만큼 */
+}
+
+.detail-media-btn {
+  flex: 1;               /* 🔥 프레임을 늘림 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-media img {
+  height: 100%;
+  max-height: 100%;
+  width: auto;
+  object-fit: contain;
 }

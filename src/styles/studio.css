@@ -334,8 +334,8 @@
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 28px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .gallery-card {
@@ -370,7 +370,7 @@
 
 .studio-gallery-content {
   width: min(760px, 90vw);
-  max-height: 70vh;
+  height: 70vh;
   min-height: 320px;
   background: #ffffff;
   border-radius: 18px;
@@ -388,6 +388,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  padding-right: 32px;
 }
 
 .studio-gallery-count {
@@ -399,6 +400,11 @@
   overflow-y: auto;
   padding-right: 6px;
   min-height: 200px;
+}
+
+.studio-gallery-content .empty {
+  text-align: center;
+  padding: 24px 0;
 }
 
 .studio-canvas-page {

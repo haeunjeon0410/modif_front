@@ -334,6 +334,17 @@
   text-transform: uppercase;
 }
 
+.brand-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: inherit;
+  cursor: pointer;
+}
+
 .designer-handle {
   font-size: 13px;
   color: var(--muted);

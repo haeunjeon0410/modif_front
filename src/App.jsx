@@ -693,6 +693,34 @@ function App() {
       )
     : 0;
 
+  const detailTags = useMemo(() => {
+    if (!detailItem?.clothing) return [];
+    const categoryMap = {
+      Knit: "니트",
+      Jacket: "자켓",
+      Coat: "코트",
+      Dress: "원피스",
+      Top: "상의",
+      Bottom: "하의",
+      Shirt: "셔츠",
+    };
+    const styleMap = {
+      Minimal: "미니멀",
+      Street: "스트릿",
+      Classic: "클래식",
+      Sport: "스포티",
+      Romantic: "로맨틱",
+    };
+    const genderMap = { Mens: "남자", Womens: "여자", Unisex: "공용" };
+    const tags = [
+      categoryMap[detailItem.clothing.category] ||
+        detailItem.clothing.category,
+      styleMap[detailItem.clothing.style] || detailItem.clothing.style,
+      genderMap[detailItem.clothing.gender] || detailItem.clothing.gender,
+    ].filter(Boolean);
+    return Array.from(new Set(tags));
+  }, [detailItem]);
+
   const finalizeFundNow = () => {
     if (!detailItem?.clothing?.id || !detailItem?.funding?.brand) return;
     const nextId = Math.max(0, ...investments.map((item) => item.id)) + 1;
@@ -2625,7 +2653,21 @@ function App() {
                     <div className="card-body">
                       <div className="card-title">
                         <div className="card-title-row">
-                          <h3>{item.brand}</h3>
+                          <button
+                            type="button"
+                            className="brand-link"
+                            onClick={() => {
+                              const profile =
+                                brandProfileMap[
+                                  item.designer_handle?.toLowerCase()
+                                ] || brandProfileMap[item.brand.toLowerCase()];
+                              if (profile) {
+                                openBrandProfile(profile);
+                              }
+                            }}
+                          >
+                            {item.brand}
+                          </button>
                           <span className="price-inline">
                             {currency.format(
                               clothingMap[item.clothing_id]?.price || 0,
@@ -2679,7 +2721,24 @@ function App() {
                   <div className="modal-stack">
                     <div className="modal-header">
                       <div>
-                        <h2>{detailItem.funding.brand}</h2>
+                        <button
+                          type="button"
+                          className="brand-link"
+                          onClick={() => {
+                            const profile =
+                              brandProfileMap[
+                                detailItem.funding.designer_handle?.toLowerCase()
+                              ] ||
+                              brandProfileMap[
+                                detailItem.funding.brand.toLowerCase()
+                              ];
+                            if (profile) {
+                              openBrandProfile(profile);
+                            }
+                          }}
+                        >
+                          {detailItem.funding.brand}
+                        </button>
                         <p>{detailItem.clothing?.name}</p>
                       </div>
                       <div className="pill-group">
@@ -2762,6 +2821,15 @@ function App() {
                               {detailItem.clothing?.description ||
                                 `${detailItem.clothing?.name}은(는) 절제된 실루엣과 깔끔한 마감으로 일상과 포멀 모두에 어울립니다.`}
                             </p>
+                            {detailTags.length > 0 && (
+                              <div className="detail-tags">
+                                {detailTags.map((tag) => (
+                                  <span key={tag} className="detail-tag">
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             <div className="spec-grid">
                               <div>
                                 <span>소재</span>
@@ -3453,6 +3521,13 @@ function App() {
                   <div className="album">
                     {initialFittingHistory.map((item) => (
                       <div key={item.id} className="album-card">
+                        <button
+                          type="button"
+                          className="album-remove"
+                          aria-label="Remove album item"
+                        >
+                          ×
+                        </button>
                         <img src={item.image} alt={item.title} />
                         <div>
                           <strong>{item.title}</strong>
@@ -3740,8 +3815,18 @@ function App() {
                               <strong>{profile.name}</strong>
                               <span>{profile.handle}</span>
                             </div>
-                            <button type="button" className="ghost">
-                              팔로우
+                            <button
+                              type="button"
+                              className={`follow-cta ${
+                                followedBrands.includes(profile.handle)
+                                  ? "is-mutual"
+                                  : ""
+                              }`}
+                              onClick={() => toggleFollowBrand(profile.handle)}
+                            >
+                              {followedBrands.includes(profile.handle)
+                                ? "맞팔로우"
+                                : "팔로우"}
                             </button>
                           </div>
                         ))
