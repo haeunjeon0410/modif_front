@@ -16,15 +16,28 @@
   gap: 20px;
 }
 
+
 .studio-workbench-actions {
   display: inline-flex;
-  gap: 14px;
+ 
+  gap: 20px; 
+  
   align-items: center;
 }
 
 .studio-workbench-actions .secondary,
 .studio-workbench-actions .primary {
-  min-width: 120px;
+  /* [수정] 둘 다 똑같은 크기로 맞추되, 글씨가 들어갈 만큼만 컴팩트하게! */
+  width: 93px; 
+  
+  /* [수정] 안쪽 여백을 줄여서 버튼을 더 날렵하게 만듭니다 */
+  padding: 8px 0; 
+  
+  /* 기존 min-width가 있다면 무시하거나 삭제 */
+  min-width: auto; 
+  
+  /* 글자 가운데 정렬 */
+  justify-content: center;
 }
 
 .studio-workbench-header h3 {

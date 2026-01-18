@@ -217,7 +217,7 @@ function App() {
       상의: ["민소매", "숏", "미디", "롱"],
       하의: ["숏", "하프", "롱"],
       아우터: ["크롭", "숏", "하프", "롱"],
-      원피스: ["미니", "미디", "롱"],
+      원d피스: ["미니", "미디", "롱"],
     }),
     [],
   );
@@ -2584,15 +2584,16 @@ function App() {
                                                 </span>
                                               )}
                                           </div>
-                                          <span className="comment-time">
-                                            {formatRelative(
-                                              comment.created_at || new Date(),
-                                            )}
-                                          </span>
+                                          
                                         </div>
                                         <span>{comment.text}</span>
                                       </div>
                                       <div className="comment-menu">
+                                        <span className="comment-time">
+                                          {formatRelative(
+                                            comment.created_at || new Date(),
+                                          )}
+                                        </span>
                                         <button
                                           type="button"
                                           className="comment-menu-btn"
@@ -2605,7 +2606,7 @@ function App() {
                                             )
                                           }
                                         >
-                                          ⋮
+                                          ...
                                         </button>
                                         {commentMenuId === comment.id && (
                                           <div className="comment-menu-pop">
@@ -2750,7 +2751,7 @@ function App() {
                           type="button"
                           onClick={generateDesign}
                         >
-                          AI 디자인 생성
+                          디자인 생성
                         </button>
                       </div>
                     </div>

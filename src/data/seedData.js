@@ -172,7 +172,7 @@ export const brandProfiles = [
     handle: "@skyline.designer",
     followerCount: 1284,
     followingCount: 214,
-    bio: "도시적인 니트웨어와 깔끔한 실루엣을 연구합니다.",
+    bio: "??? ????? ??? ?????.",
     location: "Seoul",
   },
   {
@@ -237,7 +237,7 @@ export const initialComments = [
     clothing_id: 2,
     user: "tester.one",
     rating: 5,
-    text: "??? ??????. ?? ????.",
+    text: "?? ?? ???. ??? ????.",
     created_at: "2026-02-03",
     parent_id: null,
     is_creator: false,
@@ -275,9 +275,9 @@ export const initialComments = [
 ];
 
 export const mannequins = [
-  { id: "slim", label: "Slim", desc: "? ???, ?? ??" },
-  { id: "athletic", label: "Athletic", desc: "?? ?? ??" },
-  { id: "plus", label: "Plus-size", desc: "??? ??" },
+  { id: "slim", label: "Slim", desc: "??? ???, ??? ?" },
+  { id: "athletic", label: "Athletic", desc: "??? ??, ???? ?" },
+  { id: "plus", label: "Plus-size", desc: "??? ?, ???? ???" },
 ];
 
 export const initialInvestments = [
