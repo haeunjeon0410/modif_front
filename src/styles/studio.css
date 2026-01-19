@@ -26,8 +26,8 @@
 
 .studio-workbench-actions .secondary,
 .studio-workbench-actions .primary {
-  width: 93px;
-  padding: 8px 0;
+  width: fit-content; 
+  padding: 8px 14px;  
   min-width: auto;
   justify-content: center;
 }
@@ -85,7 +85,7 @@
 .studio-workbench .workbench-body {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-  gap: 2px;
+  gap: 38px; 
 }
 .studio-workbench .workbench-canvas {
   display: flex;
@@ -140,7 +140,9 @@
 }
 
 .canvas-photo-actions {
-  position: relative;
+  position: absolute;   /* 핵심 */
+  top: 2px;
+  right: 6px;          /* 👉 캔버스 오른쪽 끝 */
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -157,7 +159,7 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  
 }
 
 .canvas-photo-btn svg {
@@ -322,7 +324,7 @@
 .workbench-prompt {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 38px;
   padding: 6px 0 0 4px;
 }
 
@@ -339,6 +341,7 @@
 
 .studio-workbench.panel {
   padding: 26px;
+  gap: 18px;
 }
 
 .field {
@@ -545,4 +548,21 @@
   .workbench-body {
     grid-template-columns: 1fr;
   }
+}
+
+.workbench-prompt {
+  height: 420px; 
+  justify-content: space-between; /* 내용물들을 위아래로 분산 */
+}
+
+.workbench-prompt .field:last-child {
+  flex: 1; /* 남은 공간 모두 내꺼! */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 3. 실제 입력창 높이를 100%로 늘림 */
+.workbench-prompt .field textarea {
+  height: 100%; /* 부모 크기만큼 꽉 채우기 */
+  min-height: 120px; /* 너무 작아지지 않게 최소 높이 설정 */
 }

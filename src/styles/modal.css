@@ -195,9 +195,14 @@
 }
 
 .ai-design-modal {
-  max-width: 1120px;
-  width: 92%;
-  padding: 28px;
+  max-width: 1090px;
+  width: 90%;
+  padding: 0;
+  height: 78vh;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 .ai-design-header {
@@ -205,7 +210,8 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin: 0 32px 20px;
+  padding-top: 20px;
 }
 
 .ai-design-header h3 {
@@ -217,35 +223,76 @@
   gap: 10px;
 }
 
-.ai-design-frame {
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 24px;
-  background: #ffffff;
-  height: 64vh;
-  max-height: 640px;
-  display: flex;
-  flex-direction: column;
-}
-
-.ai-design-stack .modal-header {
-  margin-bottom: 24px;
-}
-
 .ai-design-stack {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding: 0;
+}
+
+.ai-design-stack .modal-header {
+  margin-bottom: 20px;
 }
 
 .ai-design-stack .modal-body {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
 }
 
 .ai-design-stack .detail-scroll {
-  min-height: 360px;
+  min-height: 0;
+}
+
+.ai-design-preview-container {
+  flex: 1;
+  min-height: 0;
+  display: block;
+  width: 100%;
+  margin: 0 32px 24px;
+  padding: 24px;
+  border: 1px solid #eeeeee;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+
+.ai-design-preview-container .modal-body {
+  display: flex;
+  flex-direction: row;
+  gap: 50px;
+  flex: 1;
+  min-height: 0;
+  align-items: flex-start;
+}
+
+.ai-design-preview-container .detail-media {
+  flex: 0 0 40%;
+  width: 40%;
+  min-height: 320px;
+}
+
+.ai-design-preview-container .detail-scroll {
+  flex: 1;
+  max-width: none;
+  padding-right: 12px;
+}
+
+
+.ai-design-preview-container .image-placeholder {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed #cccccc;
+  border-radius: 16px;
+  background: #f9f9f9;
+  color: #9a9a9a;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
 }
 
 .ai-design-input,

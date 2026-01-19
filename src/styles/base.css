@@ -1644,6 +1644,29 @@ body.intro-open {
   color: #666666;
 }
 
+.design-generate-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.design-generate-top .design-coin {
+  font-size: 11px;
+  padding: 4px 8px;
+  margin-right: 15px;
+}
+
+.design-generate-top .design-coin-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.design-generate-top .design-coin-brush {
+  width: 14px;
+  height: 14px;
+}
+
 .auth-modal-actions {
   display: flex;
   justify-content: flex-end;

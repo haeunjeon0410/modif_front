@@ -91,6 +91,8 @@ function App() {
   const [designCoinModal, setDesignCoinModal] = useState(false);
   const [designCoinAlertOpen, setDesignCoinAlertOpen] = useState(false);
   const [designCoinAlertClosing, setDesignCoinAlertClosing] = useState(false);
+  const [designGenerateConfirmOpen, setDesignGenerateConfirmOpen] =
+    useState(false);
   const [designPhoto, setDesignPhoto] = useState(null);
   const designPhotoInputRef = useRef(null);
   const [alreadyFundedAlertOpen, setAlreadyFundedAlertOpen] = useState(false);
@@ -500,6 +502,11 @@ function App() {
     });
     setAiDesignEditMode(false);
     setAiDesignModal({ open: true, design: newDesign });
+  };
+
+  const confirmGenerateDesign = () => {
+    setDesignGenerateConfirmOpen(false);
+    generateDesign();
   };
 
   const handleAiDesignEditToggle = () => {
@@ -3198,7 +3205,10 @@ function App() {
                     <button
                       className="primary"
                       type="button"
-                      onClick={generateDesign}
+                      onClick={() => {
+                        if (designCoins <= 0) return;
+                        setDesignGenerateConfirmOpen(true);
+                      }}
                       disabled={designCoins <= 0}
                     >
                       디자인 생성
@@ -4646,7 +4656,7 @@ function App() {
                 </button>
               </div>
             </div>
-            <div className="ai-design-frame">
+            <div className="ai-design-preview-container">
               <div className="modal-stack ai-design-stack">
                 <div className="modal-header">
                   <div>
@@ -4684,10 +4694,9 @@ function App() {
                 </div>
                 <div className="modal-body">
                   <div className="detail-media">
-                    <img
-                      src={aiDesignModal.design.design_img_url}
-                      alt={aiDesignModal.design.name}
-                    />
+                    <div className="image-placeholder" aria-label="Image area">
+                      이미지 영역
+                    </div>
                   </div>
                   <div className="detail-scroll">
                     {detailTab === "overview" && (
@@ -4736,6 +4745,11 @@ function App() {
                               "AI가 생성한 컨셉을 기반으로 실루엣과 소재 밸런스를 설계했습니다."}
                           </p>
                         )}
+                        <div className="detail-tags">
+                          <span className="detail-tag">#니트</span>
+                          <span className="detail-tag">#미니멀</span>
+                          <span className="detail-tag">#여성</span>
+                        </div>
                         <div className="spec-grid">
                           <div>
                             <span>카테고리</span>
@@ -4795,6 +4809,26 @@ function App() {
                             <span>사이즈</span>
                             <strong>XS - XL</strong>
                           </div>
+                        </div>
+                        <div className="spec-bar">
+                          {[
+                            { label: "신축성", value: 5 },
+                            { label: "두께감", value: 5 },
+                            { label: "탄탄함", value: 5 },
+                          ].map((item) => (
+                            <div className="spec-bar-row" key={item.label}>
+                              <span>{item.label}</span>
+                              <div className="spec-track">
+                                <div
+                                  className="spec-fill"
+                                  style={{
+                                    width: `${(item.value / 10) * 100}%`,
+                                  }}
+                                />
+                              </div>
+                              <strong>{item.value}/10</strong>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -4894,6 +4928,79 @@ function App() {
             >
               확인
             </button>
+          </div>
+        </div>
+      )}
+      {designGenerateConfirmOpen && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content design-generate-modal">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={() => setDesignGenerateConfirmOpen(false)}
+            >
+              ×
+            </button>
+            <div className="design-generate-top">
+              <h3>디자인 토큰이 소모됩니다.</h3>
+              <button
+                type="button"
+                className="design-coin"
+                aria-label="Design token balance"
+                onClick={() => setDesignCoinModal(true)}
+              >
+                <span className="design-coin-icon" aria-hidden="true">
+                  <svg
+                    className="design-coin-brush"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M4 20c2.2 0 4-1.8 4-4 0-1.1.9-2 2-2h4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12 4l8 8-6 6-8-8z"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M10 6l8 8"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+                <span className="design-coin-count">{designCoins}</span>
+              </button>
+            </div>
+            <p>확인하면 AI 디자인 생성 페이지로 이동합니다.</p>
+            <div className="auth-modal-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setDesignGenerateConfirmOpen(false)}
+              >
+                돌아가기
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={confirmGenerateDesign}
+              >
+                확인
+              </button>
+            </div>
           </div>
         </div>
       )}
