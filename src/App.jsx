@@ -705,6 +705,16 @@ function App() {
       )
     : 0;
 
+  const detailAverageRating = useMemo(() => {
+    if (!detailItem?.clothing?.id) return "0.0";
+    const target = comments.filter(
+      (comment) => comment.clothing_id === detailItem.clothing.id,
+    );
+    if (!target.length) return "0.0";
+    const total = target.reduce((sum, comment) => sum + comment.rating, 0);
+    return (total / target.length).toFixed(1);
+  }, [comments, detailItem]);
+
   const detailTags = useMemo(() => {
     if (!detailItem?.clothing) return [];
     const categoryMap = {
@@ -732,6 +742,55 @@ function App() {
     ].filter(Boolean);
     return Array.from(new Set(tags));
   }, [detailItem]);
+
+  const handleDetailTagClick = (tag) => {
+    const categoryMap = {
+      Knit: "니트",
+      Jacket: "자켓",
+      Coat: "코트",
+      Dress: "원피스",
+      Top: "상의",
+      Bottom: "하의",
+      Shirt: "셔츠",
+    };
+    const styleMap = {
+      Minimal: "미니멀",
+      Street: "스트릿",
+      Classic: "클래식",
+      Sport: "스포티",
+      Romantic: "로맨틱",
+    };
+    const genderMap = { Mens: "남자", Womens: "여자", Unisex: "공용" };
+    const categoryLabelMap = Object.fromEntries(
+      Object.entries(categoryMap).map(([key, value]) => [value, key]),
+    );
+    const styleLabelMap = Object.fromEntries(
+      Object.entries(styleMap).map(([key, value]) => [value, key]),
+    );
+    const genderLabelMap = Object.fromEntries(
+      Object.entries(genderMap).map(([key, value]) => [value, key]),
+    );
+
+    if (categoryLabelMap[tag]) {
+      const category = categoryLabelMap[tag];
+      setSelectedMainCategory(categoryToMain[category] || "Tops");
+      setSelectedSubCategory(category);
+      setSelectedStyle("All");
+      setSelectedGender("All");
+    } else if (styleLabelMap[tag]) {
+      setSelectedStyle(styleLabelMap[tag]);
+      setSelectedMainCategory("All");
+      setSelectedSubCategory("All");
+      setSelectedGender("All");
+    } else if (genderLabelMap[tag]) {
+      setSelectedGender(genderLabelMap[tag]);
+      setSelectedMainCategory("All");
+      setSelectedSubCategory("All");
+      setSelectedStyle("All");
+    }
+    setActiveTab("discover");
+    setDetailItem(null);
+  };
 
   const finalizeFundNow = () => {
     if (!detailItem?.clothing?.id || !detailItem?.funding?.brand) return;
@@ -2827,7 +2886,11 @@ function App() {
                           Fitting
                         </button>
                       </div>
-                      <div className="detail-scroll">
+                      <div
+                        className={`detail-scroll ${
+                          detailTab === "feedback" ? "detail-scroll-feedback" : ""
+                        }`}
+                      >
                         {detailTab === "overview" && (
                           <div className="detail-block">
                             <div className="price-row">
@@ -2870,9 +2933,14 @@ function App() {
                             {detailTags.length > 0 && (
                               <div className="detail-tags">
                                 {detailTags.map((tag) => (
-                                  <span key={tag} className="detail-tag">
+                                  <button
+                                    key={tag}
+                                    type="button"
+                                    className="detail-tag"
+                                    onClick={() => handleDetailTagClick(tag)}
+                                  >
                                     #{tag}
-                                  </span>
+                                  </button>
                                 ))}
                               </div>
                             )}
@@ -2950,8 +3018,14 @@ function App() {
                           </div>
                         )}
                         {detailTab === "feedback" && (
-                          <div className="detail-block">
-                            <h4>소셜 피드백</h4>
+                          <div className="detail-block feedback-block">
+                            <div className="detail-title-row">
+                              <h4>소셜 피드백</h4>
+                              <div className="rating-summary">
+                                <span className="rating-label">★</span>
+                                <strong>{detailAverageRating}</strong>
+                              </div>
+                            </div>
                             <div className="comment-list compact">
                               {comments.filter(
                                 (comment) =>
@@ -2977,6 +3051,21 @@ function App() {
                                           : ""
                                       }`}
                                     >
+                                      {comment.parent_id && (
+                                        <span className="reply-icon" aria-hidden="true">
+                                          <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          >
+                                            <path d="M9 14l-4-4 4-4" />
+                                            <path d="M5 10h8a6 6 0 0 1 6 6v1" />
+                                          </svg>
+                                        </span>
+                                      )}
                                       <div className="comment-rating">
                                         {Array.from({ length: 5 }).map(
                                           (_, index) => (
@@ -4698,7 +4787,11 @@ function App() {
                       이미지 영역
                     </div>
                   </div>
-                  <div className="detail-scroll">
+                <div
+                  className={`detail-scroll ${
+                    detailTab === "feedback" ? "detail-scroll-feedback" : ""
+                  }`}
+                >
                     {detailTab === "overview" && (
                       <div className="detail-block">
                         <div className="price-row">

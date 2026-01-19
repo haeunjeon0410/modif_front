@@ -84,6 +84,7 @@
 
 .studio-workbench .workbench-body {
   display: grid;
+  
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: 38px; 
 }
@@ -326,6 +327,7 @@
   flex-direction: column;
   gap: 38px;
   padding: 6px 0 0 4px;
+  margin-top: 19px;
 }
 
 .panel {
