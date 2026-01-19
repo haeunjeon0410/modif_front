@@ -362,6 +362,24 @@
   border-radius: 12px;
 }
 
+.album-meta {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.album-meta strong {
+  font-size: 14px;
+  color: #111111;
+  margin-bottom: 4px;
+}
+
+.album-meta span {
+  font-size: 10px;
+  color: #aaaaaa;
+}
+
 .album-remove {
   position: absolute;
   top: 10px;

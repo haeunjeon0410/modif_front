@@ -238,9 +238,9 @@
 .album-modal-content {
   max-width: 600px;
   width: 100%;
-  height: auto;
   max-height: 80vh;
   padding: 24px;
+  min-height: 520px;
 }
 
 .album-modal-header {

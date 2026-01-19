@@ -1204,6 +1204,7 @@ body.intro-open {
   place-items: center;
   cursor: pointer;
   z-index: 12;
+  opacity: 0.7;
 }
 
 /* 내부 컨테이너 */

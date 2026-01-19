@@ -100,6 +100,12 @@ function App() {
   const [brandDeleteConfirmOpen, setBrandDeleteConfirmOpen] = useState(false);
   const [accountDeleteConfirmOpen, setAccountDeleteConfirmOpen] =
     useState(false);
+  const [nameModal, setNameModal] = useState({
+    open: false,
+    type: null,
+    value: "",
+    view: null,
+  });
   const [aiDesignModal, setAiDesignModal] = useState({
     open: false,
     design: null,
@@ -159,7 +165,7 @@ function App() {
     name: userBase.name,
     password: "",
     passwordConfirm: "",
-    base_photo_url: userBase.base_photo_url,
+    base_photo_url: null,
     measurements: { ...userBase.measurements },
   }));
   const [selectedStyleIds, setSelectedStyleIds] = useState([]);
@@ -288,6 +294,17 @@ function App() {
     }),
     [],
   );
+
+  const formatTimestamp = (date) => {
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${formatDate(date)} ${hours}:${minutes}`;
+  };
+
+  const formatAlbumDate = (value) => {
+    if (!value) return "";
+    return value.includes(":") ? value : `${value} 00:00`;
+  };
 
   const currentFollowerCount =
     effectiveFollowerSeries[effectiveFollowerSeries.length - 1]?.value || 0;
@@ -497,6 +514,7 @@ function App() {
     const newDesign = {
       id: nextId,
       name: trimmed || `AI 컨셉 ${nextId}`,
+      savedAt: formatTimestamp(new Date()),
       category: "Concept",
       design_img_url: nextImage,
       gender: "Unisex",
@@ -1528,7 +1546,7 @@ function App() {
     popup.document.close();
   };
 
-  const saveTempDesign = () => {
+  const saveTempDesign = (name) => {
     const canvas = designCanvasRef.current;
     if (!canvas) return;
     const dataUrl = canvas.toDataURL("image/png");
@@ -1536,8 +1554,9 @@ function App() {
     setTempDesigns((prev) => [
       {
         id: nextId,
-        name: "임시 스케치",
-        design_prompt: prompt.trim() || "임시 스케치",
+        name: name || "임시 스케치",
+        savedAt: formatTimestamp(new Date()),
+        design_prompt: name || prompt.trim() || "임시 스케치",
         design_img_url: dataUrl,
         isTemp: true,
       },
@@ -1575,7 +1594,7 @@ function App() {
       name: userProfile.name,
       password: "",
       passwordConfirm: "",
-      base_photo_url: userProfile.base_photo_url,
+      base_photo_url: null,
       measurements: { ...userProfile.measurements },
     });
     setSelectedStyleIds([]);
@@ -1678,7 +1697,7 @@ function App() {
       name: userBase.name,
       password: "",
       passwordConfirm: "",
-      base_photo_url: userBase.base_photo_url,
+      base_photo_url: null,
       measurements: { ...userBase.measurements },
     });
     setSelectedStyleIds([]);
@@ -1747,15 +1766,16 @@ const handleProfilePhotoChange = (event) => {
       img.src = src;
     });
 
-  const saveFittingSnapshot = async () => {
-    const timestamp = formatDate(new Date());
-    if (fittingView === "3d") {
+  const saveFittingSnapshot = async (name, view) => {
+    const timestamp = formatTimestamp(new Date());
+    const targetView = view || fittingView;
+    if (targetView === "3d") {
       if (!fittingCanvasRef.current) return;
       const dataUrl = fittingCanvasRef.current.toDataURL("image/png");
       setFittingHistory((prev) => [
         {
           id: `fit-${Date.now()}`,
-          title: "3D Snapshot",
+          title: name || "3D Snapshot",
           image: dataUrl,
           date: timestamp,
         },
@@ -1793,7 +1813,7 @@ const handleProfilePhotoChange = (event) => {
       setFittingHistory((prev) => [
         {
           id: `fit-${Date.now()}`,
-          title: "Real Snapshot",
+          title: name || "Real Snapshot",
           image: dataUrl,
           date: timestamp,
         },
@@ -3435,7 +3455,14 @@ const handleProfilePhotoChange = (event) => {
                     <button
                       className="secondary temp-save-btn"
                       type="button"
-                      onClick={saveTempDesign}
+                      onClick={() =>
+                        setNameModal({
+                          open: true,
+                          type: "temp-design",
+                          value: prompt.trim() || "임시 스케치",
+                          view: null,
+                        })
+                      }
                     >
                       임시 저장
                     </button>
@@ -3732,7 +3759,7 @@ const handleProfilePhotoChange = (event) => {
                     className={fittingView === "3d" ? "active" : ""}
                     onClick={() => setFittingView("3d")}
                   >
-                    3D
+                    마네킹
                   </button>
                   <button
                     type="button"
@@ -3745,7 +3772,15 @@ const handleProfilePhotoChange = (event) => {
                 <button
                   type="button"
                   className="fitting-save-btn"
-                  onClick={saveFittingSnapshot}
+                  onClick={() =>
+                    setNameModal({
+                      open: true,
+                      type: "fitting",
+                      value:
+                        fittingView === "3d" ? "3D Snapshot" : "Real Snapshot",
+                      view: fittingView,
+                    })
+                  }
                 >
                   저장
                 </button>
@@ -3955,35 +3990,9 @@ const handleProfilePhotoChange = (event) => {
                           ×
                         </button>
                         <img src={item.image} alt={item.title} />
-
-                        {/* 👇 여기부터가 바뀐 부분이야! 스타일을 직접 넣어줬어 */}
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            marginTop: "10px",
-                            textAlign: "left",
-                          }}
-                        >
-                          <strong
-                            style={{
-                              fontSize: "14px",
-                              display: "block",
-                              color: "#111",
-                              marginBottom: "4px",
-                            }}
-                          >
-                            {item.title}
-                          </strong>
-                          <span
-                            style={{
-                              fontSize: "10px",
-                              display: "block",
-                              color: "#aaaaaa",
-                            }}
-                          >
-                            {item.date}
-                          </span>
+                        <div className="album-meta">
+                          <strong>{item.title}</strong>
+                          <span>{formatAlbumDate(item.date)}</span>
                         </div>
                       </div>
                     ))}
@@ -4360,14 +4369,16 @@ const handleProfilePhotoChange = (event) => {
                         <Pencil size={16} strokeWidth={1.6} />
                       )}
                     </button>
-                    <button
-                      type="button"
-                      className="brand-delete-btn"
-                      aria-label="Delete brand profile"
-                      onClick={() => setBrandDeleteConfirmOpen(true)}
-                    >
-                      <Trash2 size={16} strokeWidth={1.6} />
-                    </button>
+                    {brandPageReady && (
+                      <button
+                        type="button"
+                        className="brand-delete-btn"
+                        aria-label="Delete brand profile"
+                        onClick={() => setBrandDeleteConfirmOpen(true)}
+                      >
+                        <Trash2 size={16} strokeWidth={1.6} />
+                      </button>
+                    )}
                   </div>
                 )}
             </div>
@@ -4834,18 +4845,19 @@ const handleProfilePhotoChange = (event) => {
                     className="gallery-card"
                     style={{ animationDelay: `${index * 60}ms` }}
                   >
-                    <img src={item.design_img_url} alt={item.name} />
-                    <div>
-                      <strong>{item.name}</strong>
-                      <span>{item.design_prompt}</span>
-                    </div>
                     <button
                       type="button"
-                      className="ghost"
+                      className="album-remove"
+                      aria-label="Remove design"
                       onClick={() => removeDesign(item.id, item.isTemp)}
                     >
-                      삭제
+                      ×
                     </button>
+                    <img src={item.design_img_url} alt={item.name} />
+                    <div className="album-meta">
+                      <strong>{item.name}</strong>
+                      <span>{item.savedAt}</span>
+                    </div>
                   </div>
                 ))}
             </div>
@@ -5186,6 +5198,75 @@ const handleProfilePhotoChange = (event) => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {nameModal.open && (
+        <div className="auth-modal" role="dialog" aria-modal="true">
+          <div className="auth-modal-content">
+            <button
+              type="button"
+              className="auth-modal-close"
+              aria-label="Close"
+              onClick={() =>
+                setNameModal({ open: false, type: null, value: "", view: null })
+              }
+            >
+              ×
+            </button>
+            <h3>이름을 입력하세요</h3>
+            <div className="auth-modal-form">
+              <label className="field">
+                이름
+                <input
+                  value={nameModal.value}
+                  onChange={(event) =>
+                    setNameModal((prev) => ({
+                      ...prev,
+                      value: event.target.value,
+                    }))
+                  }
+                  placeholder="이름을 입력하세요"
+                />
+              </label>
+            </div>
+            <div className="auth-modal-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() =>
+                  setNameModal({
+                    open: false,
+                    type: null,
+                    value: "",
+                    view: null,
+                  })
+                }
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  const trimmed = nameModal.value.trim();
+                  if (nameModal.type === "temp-design") {
+                    saveTempDesign(trimmed);
+                  }
+                  if (nameModal.type === "fitting") {
+                    saveFittingSnapshot(trimmed, nameModal.view);
+                  }
+                  setNameModal({
+                    open: false,
+                    type: null,
+                    value: "",
+                    view: null,
+                  });
+                }}
+              >
+                저장
+              </button>
             </div>
           </div>
         </div>
