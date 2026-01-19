@@ -32,11 +32,9 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
-
-
-
 .album-modal-content {
-  width: min(980px, 92vw);
+  width: min(640px, 90vw); /* 기존 980px -> 640px로 수정 (더 작게!) */
+  padding: 24px; /* 여백 추가 */
 }
 
 .modal-header {
@@ -45,6 +43,7 @@
   align-items: center;
   gap: 32px;
   margin-bottom: 20px;
+  padding-right: 50px;
 }
 
 .modal-header .brand-link {
@@ -163,6 +162,8 @@
 }
 
 .detail-scroll {
+  box-sizing: border-box;
+  padding-right: 12px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -176,20 +177,21 @@
 
 
 .detail-scroll .detail-block {
-  padding: 12px 0 26px;
-  gap: 26px;
+  padding: 8px 0 30px;
+  gap: 14px;
   overflow: visible;
   min-height: 100%;
 }
 
 .close {
   position: absolute;
-  top: 32px;
-  right: 32px;
+  top: 16px;
+  right: 28px;
   border: none;
   background: none;
   font-size: 24px;
   cursor: pointer;
+  z-index: 10;
 }
 
 .ai-design-modal {
@@ -353,14 +355,14 @@
 }
 
 .detail-block p {
-  line-height: 1.7;
+  line-height: 1.55;
 }
 
 .detail-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 10px;
   color: var(--muted);
 }
 
@@ -368,7 +370,7 @@
   border: 1px solid var(--border);
   background: #f3f3f3;
   border-radius: 999px;
-  padding: 4px 8px;
+  padding: 3px 6px;
 }
 
 .detail-title-row {
@@ -378,35 +380,42 @@
   gap: 10px;
 }
 .price-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;   /* 🔥 PRICE 라인 기준으로 올림 */
-  
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-rows: auto auto;
+  column-gap: 16px;
+  row-gap: 6px;
+  align-items: center;
 }
 
 .detail-fund-btn {
-  align-self: flex-end;
-  margin-left: auto;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  align-self: center;
   padding: 6px 14px;
   border-radius: 999px;
   font-size: 12px;
-  position: relative;
-  right: -45px;   
-  top: 31px;     
 }
 .price-row > .price-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-rows: auto auto;
+  row-gap: 6px;
+  grid-column: 1;
+  grid-row: 1 / span 2;
 }
 
 .price-row > div {
   display: block;
 }
 .price-like-row {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
+  justify-content: flex-end;
+  justify-self: end;
   align-items: center;
-  gap: 12px;             /* 좋아요 ↔ 버튼 간격 */
+  gap: 12px;             /* ???/?? ?? */
 }
 
 .price-row .like-count-inline {
@@ -452,10 +461,10 @@
 .spec-grid div {
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 10px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   font-size: 13px;
 }
 
@@ -472,7 +481,7 @@
   display: grid;
   grid-template-columns: 70px 1fr 44px;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
 }
 
 .spec-bar-row span {
@@ -561,6 +570,7 @@
   flex: 1;
   overflow-y: auto;
   width: 100%;
+  min-height: 0;
 }
 
 .comment {
@@ -807,6 +817,7 @@
   flex: 1;
   overflow-y: auto;
   padding-bottom: 96px; /* 입력창 높이만큼 */
+  min-height: 0;
 }
 
 

@@ -61,6 +61,8 @@ function App() {
   const [fittingLayers, setFittingLayers] = useState([]);
   const [focusClothingId, setFocusClothingId] = useState(null);
   const [isComposing, setIsComposing] = useState(false);
+  const [fittingView, setFittingView] = useState("3d");
+  const [fittingZoom, setFittingZoom] = useState(0.9);
   const [userProfile, setUserProfile] = useState(userBase);
   const [brands, setBrands] = useState(initialBrands);
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -88,6 +90,9 @@ function App() {
   const [designCoins, setDesignCoins] = useState(6);
   const [designCoinModal, setDesignCoinModal] = useState(false);
   const [designCoinAlertOpen, setDesignCoinAlertOpen] = useState(false);
+  const [designCoinAlertClosing, setDesignCoinAlertClosing] = useState(false);
+  const [designPhoto, setDesignPhoto] = useState(null);
+  const designPhotoInputRef = useRef(null);
   const [alreadyFundedAlertOpen, setAlreadyFundedAlertOpen] = useState(false);
   const [fundingAlertOpen, setFundingAlertOpen] = useState(false);
   const [fundingCancelAlertOpen, setFundingCancelAlertOpen] = useState(false);
@@ -854,6 +859,10 @@ function App() {
   };
 
   const openCanvasZoom = () => {
+    if (designPhoto?.url) {
+      setImagePreview(designPhoto.url);
+      return;
+    }
     if (canvasPopupRef.current && !canvasPopupRef.current.closed) {
       canvasPopupRef.current.focus();
       return;
@@ -1509,6 +1518,14 @@ function App() {
     }, 250);
   };
 
+  const closeDesignCoinAlert = () => {
+    setDesignCoinAlertClosing(true);
+    window.setTimeout(() => {
+      setDesignCoinAlertOpen(false);
+      setDesignCoinAlertClosing(false);
+    }, 250);
+  };
+
   const submitLogin = () => {
     if (!loginDraft.handle.trim() || !loginDraft.password.trim()) return;
     setIsLoggedIn(true);
@@ -1562,6 +1579,20 @@ function App() {
     if (file) {
       const url = URL.createObjectURL(file);
       updateSignupField("base_photo_url", url);
+    }
+  };
+
+  const handleDesignPhotoChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setDesignPhoto({ url, name: file.name });
+  };
+
+  const clearDesignPhoto = () => {
+    setDesignPhoto(null);
+    if (designPhotoInputRef.current) {
+      designPhotoInputRef.current.value = "";
     }
   };
 
@@ -1661,6 +1692,14 @@ function App() {
     }, 5000);
     return () => window.clearTimeout(timer);
   }, [alreadyFundedAlertOpen]);
+
+  useEffect(() => {
+    if (!designCoinAlertOpen) return undefined;
+    const timer = window.setTimeout(() => {
+      closeDesignCoinAlert();
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [designCoinAlertOpen]);
 
   useEffect(() => {
     if (!introOpen) return;
@@ -1866,7 +1905,7 @@ function App() {
                             onChange={(event) =>
                               updateSignupField("handle", event.target.value)
                             }
-                            placeholder="@your.id"
+                            placeholder="your.id"
                           />
                         </label>
                         <label className="onboarding-field">
@@ -2950,7 +2989,7 @@ function App() {
                                       <div className="comment-body">
                                         <div className="comment-meta">
                                           <div className="comment-user">
-                                            <strong>@{comment.user}</strong>
+                                            <strong>{comment.user}</strong>
                                             {comment.parent_id &&
                                               comment.is_creator && (
                                                 <span className="creator-badge">
@@ -3150,6 +3189,13 @@ function App() {
                       <span className="design-coin-count">{designCoins}</span>
                     </button>
                     <button
+                      className="secondary temp-save-btn"
+                      type="button"
+                      onClick={saveTempDesign}
+                    >
+                      임시 저장
+                    </button>
+                    <button
                       className="primary"
                       type="button"
                       onClick={generateDesign}
@@ -3238,24 +3284,76 @@ function App() {
                           }
                         />
                       </label>
-                      <button
-                        className="secondary temp-save-btn"
-                        type="button"
-                        onClick={saveTempDesign}
-                      >
-                        임시 저장
-                      </button>
+                      <div className="canvas-photo-actions">
+                        <button
+                          type="button"
+                          className="canvas-photo-btn"
+                          onClick={() => designPhotoInputRef.current?.click()}
+                          aria-label="Upload photo"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            <path
+                              d="M7 7l1.5-2h7L17 7h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2z"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.6"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <circle
+                              cx="12"
+                              cy="13"
+                              r="3.2"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.6"
+                            />
+                          </svg>
+                        </button>
+                        {designPhoto?.url && (
+                          <button
+                            type="button"
+                            className="canvas-photo-clear"
+                            onClick={clearDesignPhoto}
+                            aria-label="Remove photo"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="design-canvas-wrap">
-                      <canvas
-                        ref={designCanvasRef}
-                        className="design-canvas"
-                        style={{ cursor: "crosshair" }}
-                        width="720"
-                        height="420"
-                        onMouseDown={handleCanvasDraw}
-                        aria-label="Design canvas"
-                      />
+                      <div className="design-canvas-area">
+                        <div className="design-canvas-frame">
+                          {designPhoto?.url && (
+                            <img
+                              className="design-photo-preview"
+                              src={designPhoto.url}
+                              alt={designPhoto.name || "Design reference"}
+                            />
+                          )}
+                          <canvas
+                            ref={designCanvasRef}
+                            className="design-canvas"
+                            style={{ cursor: "crosshair" }}
+                            width="720"
+                            height="420"
+                            onMouseDown={handleCanvasDraw}
+                            aria-label="Design canvas"
+                          />
+                        </div>
+                        <input
+                          ref={designPhotoInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleDesignPhotoChange}
+                          className="canvas-photo-input"
+                        />
+                      </div>
                       <p className="design-hint">
                         {designCategory} 실루엣을 드로잉하세요. 클릭하면 전체
                         화면으로 이동합니다.
@@ -3381,17 +3479,71 @@ function App() {
 
             <div className="fitting-layout">
               <div className="fitting-preview">
-                <Canvas camera={{ position: [0, 0, 1.5], fov: 45 }}>
-                  <ambientLight intensity={0.6} />
-                  <directionalLight position={[2, 2, 2]} intensity={0.8} />
-                  <OrbitControls enablePan={false} />
-                  <Suspense fallback={null}>
-                    <Environment preset="city" />
-                    <Center>
-                      <Tshirt />
-                    </Center>
-                  </Suspense>
-                </Canvas>
+                <div className="fitting-toggle">
+                  <button
+                    type="button"
+                    className={fittingView === "3d" ? "active" : ""}
+                    onClick={() => setFittingView("3d")}
+                  >
+                    3D
+                  </button>
+                  <button
+                    type="button"
+                    className={fittingView === "real" ? "active" : ""}
+                    onClick={() => setFittingView("real")}
+                  >
+                    실물
+                  </button>
+                </div>
+                {fittingView === "3d" ? (
+                  <Canvas camera={{ position: [0, 0, 1.5], fov: 45 }}>
+                    <ambientLight intensity={0.6} />
+                    <directionalLight position={[2, 2, 2]} intensity={0.8} />
+                    <OrbitControls enablePan={false} />
+                    <Suspense fallback={null}>
+                      <Environment preset="city" />
+                      <Center>
+                        <Tshirt />
+                      </Center>
+                    </Suspense>
+                  </Canvas>
+                ) : (
+                  <div
+                    className="fitting-real"
+                    onWheel={(event) => {
+                      event.preventDefault();
+                      const delta = event.deltaY > 0 ? -0.08 : 0.08;
+                      setFittingZoom((prev) => clamp(prev + delta, 0.7, 1.8));
+                    }}
+                  >
+                    <img
+                      className="fitting-real-base"
+                      src="/image7.png"
+                      alt="model"
+                      style={{
+                        transform: `scale(${fittingZoom})`,
+                        transformOrigin: "center",
+                      }}
+                    />
+                    {fittingLayers.length > 0 && (
+                      <div
+                        className="layer-stack"
+                        style={{
+                          transform: `scale(${fittingZoom})`,
+                          transformOrigin: "center",
+                        }}
+                      >
+                        {fittingLayers.map((id) => (
+                          <img
+                            key={id}
+                            src={clothingMap[id]?.design_img_url}
+                            alt={clothingMap[id]?.name}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {isComposing && <div className="compose">AI 합성 중...</div>}
               </div>
 
@@ -3529,9 +3681,35 @@ function App() {
                           ×
                         </button>
                         <img src={item.image} alt={item.title} />
-                        <div>
-                          <strong>{item.title}</strong>
-                          <span>{item.date}</span>
+
+                        {/* 👇 여기부터가 바뀐 부분이야! 스타일을 직접 넣어줬어 */}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            marginTop: "10px",
+                            textAlign: "left",
+                          }}
+                        >
+                          <strong
+                            style={{
+                              fontSize: "14px",
+                              display: "block",
+                              color: "#111",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            {item.title}
+                          </strong>
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              display: "block",
+                              color: "#aaaaaa",
+                            }}
+                          >
+                            {item.date}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -3603,7 +3781,7 @@ function App() {
                         <div>
                           <strong>{item.brand}</strong>
                           <p>
-                            참여 {item.participantCount}명 · \
+                            참여 {item.participantCount}명 · ₩{" "}
                             {currency.format(item.currentCoin)}
                           </p>
                         </div>
@@ -3619,7 +3797,7 @@ function App() {
                 </div>
 
                 <div className="portfolio-side">
-                  <div className="panel follow-cta">
+                  <div className="brand-page-panel">
                     <h3>Brand Page</h3>
                     <button
                       type="button"
@@ -4267,7 +4445,7 @@ function App() {
                       handle: event.target.value,
                     }))
                   }
-                  placeholder="@your.id"
+                  placeholder="your.id"
                 />
               </label>
               <label>
@@ -4686,6 +4864,7 @@ function App() {
                     onClick={() => {
                       setDesignCoins((prev) => prev + pack.amount);
                       setDesignCoinAlertOpen(true);
+                      setDesignCoinAlertClosing(false);
                     }}
                   >
                     {currency.format(pack.price)} 구입
@@ -4697,27 +4876,24 @@ function App() {
         </div>
       )}
       {designCoinAlertOpen && (
-        <div className="auth-modal" role="dialog" aria-modal="true">
-          <div className="auth-modal-content design-coin-modal">
+        <div
+          className={`toast-banner ${
+            designCoinAlertClosing ? "is-leaving" : ""
+          }`}
+          role="status"
+        >
+          <div className="toast-content">
+            <strong>토큰이 구매되었습니다.</strong>
+            <span>디자인 토큰이 충전되었습니다.</span>
+          </div>
+          <div className="toast-actions">
             <button
               type="button"
-              className="auth-modal-close"
-              aria-label="Close"
-              onClick={() => setDesignCoinAlertOpen(false)}
+              className="primary"
+              onClick={closeDesignCoinAlert}
             >
-              ×
+              확인
             </button>
-            <h3>토큰이 구매되었습니다.</h3>
-            <p>디자인 토큰이 충전되었습니다.</p>
-            <div className="auth-modal-actions">
-              <button
-                type="button"
-                className="primary"
-                onClick={() => setDesignCoinAlertOpen(false)}
-              >
-                확인
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -4755,9 +4931,7 @@ function App() {
       )}
       {alreadyFundedAlertOpen && (
         <div
-          className={`toast-banner ${
-            alreadyFundedClosing ? "is-leaving" : ""
-          }`}
+          className={`toast-banner ${alreadyFundedClosing ? "is-leaving" : ""}`}
           role="status"
         >
           <div className="toast-content">
@@ -4777,9 +4951,7 @@ function App() {
       )}
       {fundingAlertOpen && (
         <div
-          className={`toast-banner ${
-            fundingAlertClosing ? "is-leaving" : ""
-          }`}
+          className={`toast-banner ${fundingAlertClosing ? "is-leaving" : ""}`}
           role="status"
         >
           <div className="toast-content">
@@ -4799,9 +4971,7 @@ function App() {
       )}
       {fundingCancelAlertOpen && (
         <div
-          className={`toast-banner ${
-            fundingCancelClosing ? "is-leaving" : ""
-          }`}
+          className={`toast-banner ${fundingCancelClosing ? "is-leaving" : ""}`}
           role="status"
         >
           <div className="toast-content">
