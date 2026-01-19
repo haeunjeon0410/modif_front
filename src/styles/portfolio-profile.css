@@ -389,7 +389,7 @@
 .follow-stat-btn {
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 12px;
+  padding: 8px 10px;
   background: #ffffff;
   display: grid;
   gap: 6px;
@@ -408,7 +408,7 @@
   cursor: pointer;
   border: 1px solid var(--border);
   background: #ffffff;
-  min-height: 72px;
+  min-height: 56px;
 }
 
 .follow-chart {
@@ -553,11 +553,11 @@
 }
 
 .follow-modal {
-  max-width: 520px;
+  max-width: 420px;
   width: 100%;
   height: auto;
   max-height: 80vh;
-  padding: 32px;
+  padding: 24px;
 }
 
 .follow-modal .close {
@@ -606,7 +606,28 @@
   gap: 16px;
 }
 
+.brand-title-actions {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .brand-edit-btn {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  border-radius: 999px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.brand-delete-btn {
   border: 1px solid var(--border);
   background: #ffffff;
   border-radius: 999px;
@@ -615,6 +636,7 @@
   display: grid;
   place-items: center;
   cursor: pointer;
+  color: #c0392b;
 }
 
 .brand-hero-info input,
