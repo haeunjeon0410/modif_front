@@ -246,29 +246,51 @@
   gap: 18px;
 }
 
-.profile-header {
+.profile-top {
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 18px;
+  grid-template-columns: 180px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.profile-photo-box {
+  width: 180px;
+  height: 180px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
 }
 
 .profile-photo {
-  width: 88px;
-  height: 120px;
-  border-radius: 16px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border: 1px solid var(--border);
 }
 
-.profile-header span {
+.profile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.profile-main-header span {
   font-size: 12px;
   color: var(--muted);
 }
 
-.profile-actions {
+.profile-main-actions {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
@@ -326,6 +348,10 @@
   grid-column: 1 / -1;
 }
 
+.profile-fields-compact {
+  padding-top: 6px;
+}
+
 .measurement-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -369,6 +395,13 @@
   text-align: left;
 }
 
+.album-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .album-meta strong {
   font-size: 14px;
   color: #111111;
@@ -378,6 +411,17 @@
 .album-meta span {
   font-size: 10px;
   color: #aaaaaa;
+}
+
+.album-load-btn {
+  border: 1px solid #111111;
+  background: #111111;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .album-remove {
@@ -557,7 +601,13 @@
   background: #ffffff;
   color: #111111;
   border-radius: 999px;
-  padding: 6px 12px;
+  min-height: 0 !important; 
+  height: 32px; 
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  
+  padding: 0 14px; 
   font-size: 12px;
   cursor: pointer;
   min-width: 74px;
@@ -574,7 +624,7 @@
   max-width: 420px;
   width: 100%;
   height: auto;
-  max-height: 80vh;
+  max-height: 40vh;
   padding: 24px;
 }
 

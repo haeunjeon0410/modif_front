@@ -73,6 +73,7 @@ function App() {
   const [isComposing, setIsComposing] = useState(false);
   const [fittingView, setFittingView] = useState("3d");
   const [fittingZoom, setFittingZoom] = useState(0.9);
+  const [fittingRealBaseUrl, setFittingRealBaseUrl] = useState("/image7.png");
   const [userProfile, setUserProfile] = useState(userBase);
   const [brands, setBrands] = useState(initialBrands);
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -106,6 +107,8 @@ function App() {
     value: "",
     view: null,
   });
+  const [limitAlertOpen, setLimitAlertOpen] = useState(false);
+  const [limitAlertMessage, setLimitAlertMessage] = useState("");
   const [aiDesignModal, setAiDesignModal] = useState({
     open: false,
     design: null,
@@ -169,6 +172,10 @@ function App() {
     measurements: { ...userBase.measurements },
   }));
   const [selectedStyleIds, setSelectedStyleIds] = useState([]);
+  const [profilePasswordDraft, setProfilePasswordDraft] = useState({
+    password: "",
+    confirm: "",
+  });
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -199,6 +206,11 @@ function App() {
   const [designColor, setDesignColor] = useState("#111111");
   const [designSize, setDesignSize] = useState(6);
   const [showClearBubble, setShowClearBubble] = useState(false);
+  const [studioSide, setStudioSide] = useState("front");
+  const [studioSideImages, setStudioSideImages] = useState({
+    front: null,
+    back: null,
+  });
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [tempDesigns, setTempDesigns] = useState([]);
   const designCanvasRef = useRef(null);
@@ -304,6 +316,15 @@ function App() {
   const formatAlbumDate = (value) => {
     if (!value) return "";
     return value.includes(":") ? value : `${value} 00:00`;
+  };
+
+  const openLimitAlert = (message) => {
+    setLimitAlertMessage(message);
+    setLimitAlertOpen(true);
+    window.setTimeout(() => {
+      setLimitAlertOpen(false);
+      setLimitAlertMessage("");
+    }, 2000);
   };
 
   const currentFollowerCount =
@@ -1547,6 +1568,13 @@ function App() {
   };
 
   const saveTempDesign = (name) => {
+    const totalDesignCount = generatedDesigns.length + tempDesigns.length;
+    if (totalDesignCount >= 10) {
+      openLimitAlert(
+        "저장된 디자인은 10장까지만 보관됩니다. 기존 디자인을 삭제한 뒤 다시 시도해주세요.",
+      );
+      return;
+    }
     const canvas = designCanvasRef.current;
     if (!canvas) return;
     const dataUrl = canvas.toDataURL("image/png");
@@ -1757,6 +1785,45 @@ const handleProfilePhotoChange = (event) => {
     }
   };
 
+  const loadDesignToCanvas = (src) => {
+    const canvas = designCanvasRef.current;
+    if (!canvas || !src) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const image = new Image();
+    image.onload = () => {
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const scale = Math.min(
+        canvasWidth / image.width,
+        canvasHeight / image.height,
+      );
+      const drawWidth = image.width * scale;
+      const drawHeight = image.height * scale;
+      const offsetX = (canvasWidth - drawWidth) / 2;
+      const offsetY = (canvasHeight - drawHeight) / 2;
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+    };
+    image.src = src;
+  };
+
+  const switchStudioSide = (nextSide) => {
+    if (nextSide === studioSide) return;
+    const canvas = designCanvasRef.current;
+    if (canvas) {
+      const currentUrl = canvas.toDataURL("image/png");
+      setStudioSideImages((prev) => ({ ...prev, [studioSide]: currentUrl }));
+    }
+    const nextUrl = studioSideImages[nextSide];
+    setStudioSide(nextSide);
+    if (nextUrl) {
+      loadDesignToCanvas(nextUrl);
+    } else {
+      clearDesignCanvas();
+    }
+  };
+
   const loadImage = (src) =>
     new Promise((resolve, reject) => {
       const img = new Image();
@@ -1767,6 +1834,12 @@ const handleProfilePhotoChange = (event) => {
     });
 
   const saveFittingSnapshot = async (name, view) => {
+    if (fittingHistory.length >= 10) {
+      openLimitAlert(
+        "피팅 앨범은 10장까지만 저장할 수 있습니다. 기존 항목을 삭제한 뒤 다시 시도해주세요.",
+      );
+      return;
+    }
     const timestamp = formatTimestamp(new Date());
     const targetView = view || fittingView;
     if (targetView === "3d") {
@@ -3603,6 +3676,22 @@ const handleProfilePhotoChange = (event) => {
                     <div className="design-canvas-wrap">
                       <div className="design-canvas-area">
                         <div className="design-canvas-frame">
+                          <div className="studio-side-toggle">
+                            <button
+                              type="button"
+                              className={studioSide === "front" ? "active" : ""}
+                              onClick={() => switchStudioSide("front")}
+                            >
+                              앞면
+                            </button>
+                            <button
+                              type="button"
+                              className={studioSide === "back" ? "active" : ""}
+                              onClick={() => switchStudioSide("back")}
+                            >
+                              뒷면
+                            </button>
+                          </div>
                           {designPhoto?.url && (
                             <img
                               className="design-photo-preview"
@@ -3746,7 +3835,7 @@ const handleProfilePhotoChange = (event) => {
                   className="secondary"
                   onClick={() => setFittingAlbumOpen(true)}
                 >
-                  Fitting Album
+                  피팅 앨범
                 </button>
               </div>
             </div>
@@ -3813,7 +3902,7 @@ const handleProfilePhotoChange = (event) => {
                   >
                     <img
                       className="fitting-real-base"
-                      src="/image7.png"
+                      src={fittingRealBaseUrl}
                       alt="model"
                       style={{
                         transform: `scale(${fittingZoom})`,
@@ -3962,7 +4051,11 @@ const handleProfilePhotoChange = (event) => {
             </div>
             {fittingAlbumOpen && (
               <div className="modal" role="dialog" aria-modal="true">
-                <div className="modal-content album-modal-content">
+                <div
+                  className={`modal-content album-modal-content ${
+                    fittingHistory.length <= 2 ? "compact" : ""
+                  }`}
+                >
                   <button
                     className="close"
                     type="button"
@@ -3991,7 +4084,21 @@ const handleProfilePhotoChange = (event) => {
                         </button>
                         <img src={item.image} alt={item.title} />
                         <div className="album-meta">
-                          <strong>{item.title}</strong>
+                          <div className="album-meta-row">
+                            <strong>{item.title}</strong>
+                            <button
+                              type="button"
+                              className="album-load-btn"
+                              onClick={() => {
+                                setFittingRealBaseUrl(item.image);
+                                setFittingView("real");
+                                setFittingLayers([]);
+                                setFittingAlbumOpen(false);
+                              }}
+                            >
+                              불러오기
+                            </button>
+                          </div>
                           <span>{formatAlbumDate(item.date)}</span>
                         </div>
                       </div>
@@ -4530,111 +4637,126 @@ const handleProfilePhotoChange = (event) => {
 
             <div className="profile-center">
               <div className="panel profile-card">
-                <div className="profile-header">
-                  <img
-                    className="profile-photo"
-                    src={userProfile.base_photo_url}
-                    alt="profile"
-                  />
-                  <div>
-                    <h3>{userProfile.name}</h3>
-                    <span>{userProfile.handle}</span>
+                <div className="profile-top">
+                  <div className="profile-photo-box">
+                    <img
+                      className="profile-photo"
+                      src={userProfile.base_photo_url}
+                      alt="profile"
+                    />
                   </div>
-                  <div className="profile-actions">
-                    <button
-                      type="button"
-                      className="profile-coin"
-                      onClick={() => setDesignCoinModal(true)}
-                    >
-                      <span className="profile-coin-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                          <path
-                            d="M4 20c2.2 0 4-1.8 4-4 0-1.1.9-2 2-2h4"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M12 4l8 8-6 6-8-8z"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M10 6l8 8"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </span>
-                      <span>{designCoins}</span>
-                    </button>
+                  <div className="profile-main">
+                    <div className="profile-main-header">
+                      <div>
+                        <h3>{userProfile.name}</h3>
+                        <span>{userProfile.handle}</span>
+                      </div>
+                      <div className="profile-main-actions">
+                        <button
+                          type="button"
+                          className="profile-coin"
+                          onClick={() => setDesignCoinModal(true)}
+                        >
+                          <span className="profile-coin-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                              <path
+                                d="M4 20c2.2 0 4-1.8 4-4 0-1.1.9-2 2-2h4"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M12 4l8 8-6 6-8-8z"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M10 6l8 8"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                          </span>
+                          <span>{designCoins}</span>
+                        </button>
+                        {isProfileEditing && (
+                          <button
+                            type="button"
+                            className="primary"
+                            onClick={() => {
+                              setIsProfileEditing(false);
+                              setProfilePasswordDraft({ password: "", confirm: "" });
+                            }}
+                          >
+                            저장
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="profile-fields profile-fields-compact">
+                      <label className="field">
+                        비밀번호
+                        <input
+                          type="password"
+                          value={
+                            isProfileEditing
+                              ? profilePasswordDraft.password
+                              : "••••••••"
+                          }
+                          disabled={!isProfileEditing}
+                          onChange={(event) =>
+                            setProfilePasswordDraft((prev) => ({
+                              ...prev,
+                              password: event.target.value,
+                            }))
+                          }
+                          placeholder="비밀번호 변경"
+                        />
+                      </label>
+                      <label className="field">
+                        비밀번호 변경 확인
+                        <input
+                          type="password"
+                          value={
+                            isProfileEditing
+                              ? profilePasswordDraft.confirm
+                              : "••••••••"
+                          }
+                          disabled={!isProfileEditing}
+                          onChange={(event) =>
+                            setProfilePasswordDraft((prev) => ({
+                              ...prev,
+                              confirm: event.target.value,
+                            }))
+                          }
+                          placeholder="비밀번호 확인"
+                        />
+                      </label>
+                      <label className="field full">
+                        선호스타일
+                        <input
+                          value={userProfile.styleTags.join(", ")}
+                          disabled={!isProfileEditing}
+                          onChange={(event) =>
+                            updateProfileField(
+                              "styleTags",
+                              event.target.value
+                                .split(",")
+                                .map((item) => item.trim())
+                                .filter(Boolean),
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
                   </div>
-                </div>
-
-                <div className="profile-fields">
-                  <label className="field">
-                    사용자 이름
-                    <input
-                      value={userProfile.name}
-                      disabled={!isProfileEditing}
-                      onChange={(event) =>
-                        updateProfileField("name", event.target.value)
-                      }
-                    />
-                  </label>
-                  <label className="field">
-                    사용자 id
-                    <input
-                      value={userProfile.handle}
-                      disabled={!isProfileEditing}
-                      onChange={(event) =>
-                        updateProfileField("handle", event.target.value)
-                      }
-                    />
-                  </label>
-                  <label className="field">
-                    피팅용 기본 전신 사진
-                    <input
-                      value={userProfile.base_photo_url}
-                      disabled={!isProfileEditing}
-                      onChange={(event) =>
-                        updateProfileField("base_photo_url", event.target.value)
-                      }
-                    />
-                  </label>
-                  <label className="field">
-                    체형 분류 라벨
-                    <input
-                      value={userProfile.bodyTypeLabel}
-                      disabled={!isProfileEditing}
-                      onChange={(event) =>
-                        updateProfileField("bodyTypeLabel", event.target.value)
-                      }
-                    />
-                  </label>
-                  <label className="field full">
-                    선호 스타일 태그 목록
-                    <input
-                      value={userProfile.styleTags.join(", ")}
-                      disabled={!isProfileEditing}
-                      onChange={(event) =>
-                        updateProfileField(
-                          "styleTags",
-                          event.target.value
-                            .split(",")
-                            .map((item) => item.trim())
-                            .filter(Boolean),
-                        )
-                      }
-                    />
-                  </label>
                 </div>
 
                 <h4>정밀 신체 수치 데이터</h4>
@@ -4671,6 +4793,7 @@ const handleProfilePhotoChange = (event) => {
                   <button
                     type="button"
                     className="ghost"
+                    disabled={isProfileEditing}
                     onClick={() => setIsProfileEditing(true)}
                   >
                     수정
@@ -4815,7 +4938,9 @@ const handleProfilePhotoChange = (event) => {
           onClick={() => setIsGalleryOpen(false)}
         >
           <div
-            className="studio-gallery-content"
+            className={`studio-gallery-content ${
+              generatedDesigns.length + tempDesigns.length <= 2 ? "compact" : ""
+            }`}
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -4855,7 +4980,23 @@ const handleProfilePhotoChange = (event) => {
                     </button>
                     <img src={item.design_img_url} alt={item.name} />
                     <div className="album-meta">
-                      <strong>{item.name}</strong>
+                      <div className="album-meta-row">
+                        <strong>{item.name}</strong>
+                        <button
+                          type="button"
+                          className="album-load-btn"
+                          onClick={() => {
+                            setStudioSideImages((prev) => ({
+                              ...prev,
+                              [studioSide]: item.design_img_url,
+                            }));
+                            loadDesignToCanvas(item.design_img_url);
+                            setIsGalleryOpen(false);
+                          }}
+                        >
+                          불러오기
+                        </button>
+                      </div>
                       <span>{item.savedAt}</span>
                     </div>
                   </div>
@@ -5580,6 +5721,23 @@ const handleProfilePhotoChange = (event) => {
               type="button"
               className="primary"
               onClick={closeFundingCancelAlert}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+      {limitAlertOpen && (
+        <div className="toast-banner" role="status">
+          <div className="toast-content">
+            <strong>최대 저장 수를 초과했습니다.</strong>
+            <span>{limitAlertMessage}</span>
+          </div>
+          <div className="toast-actions">
+            <button
+              type="button"
+              className="primary"
+              onClick={() => setLimitAlertOpen(false)}
             >
               확인
             </button>
