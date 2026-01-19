@@ -3891,31 +3891,50 @@ function App() {
                   {brandEditing &&
                   selectedBrandProfile.handle === myBrandDetails.handle ? (
                     <>
-                      <input
-                        value={myBrandDetails.logoUrl}
-                        onChange={(event) =>
-                          setMyBrandDetails((prev) => ({
-                            ...prev,
-                            logoUrl: event.target.value,
-                          }))
-                        }
-                        placeholder="로고 이미지 URL"
-                      />
+                      <div className="brand-logo-upload">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(event) => {
+                            const file = event.target.files[0];
+                            if (!file) return;
+                            const url = URL.createObjectURL(file);
+                            setMyBrandDetails((prev) => ({
+                              ...prev,
+                              logoUrl: url,
+                            }));
+                          }}
+                        />
+                        {myBrandDetails.logoUrl ? (
+                          <>
+                            <img
+                              src={myBrandDetails.logoUrl}
+                              alt="Brand logo"
+                            />
+                            <button
+                              type="button"
+                              className="brand-logo-remove"
+                              aria-label="Remove brand logo"
+                              onClick={() =>
+                                setMyBrandDetails((prev) => ({
+                                  ...prev,
+                                  logoUrl: "",
+                                }))
+                              }
+                            >
+                              ×
+                            </button>
+                          </>
+                        ) : (
+                          <span>로고 등록</span>
+                        )}
+                      </div>
                       <input
                         value={myBrandDetails.brand}
                         onChange={(event) =>
                           setMyBrandDetails((prev) => ({
                             ...prev,
                             brand: event.target.value,
-                          }))
-                        }
-                      />
-                      <input
-                        value={myBrandDetails.handle}
-                        onChange={(event) =>
-                          setMyBrandDetails((prev) => ({
-                            ...prev,
-                            handle: event.target.value,
                           }))
                         }
                       />
@@ -3937,12 +3956,7 @@ function App() {
                         src={myBrandDetails.logoUrl}
                         alt={`${selectedBrandProfile.brand} logo`}
                       />
-                      <strong>
-                        {selectedBrandProfile.brand}{" "}
-                        <span className="brand-handle-inline">
-                          {selectedBrandProfile.handle}
-                        </span>
-                      </strong>
+                      <strong>{selectedBrandProfile.brand}</strong>
                       <p>{selectedBrandProfile.bio}</p>
                     </>
                   )}
