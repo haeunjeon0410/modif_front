@@ -213,6 +213,7 @@ function App() {
   });
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [tempDesigns, setTempDesigns] = useState([]);
+  const [profilePhotoMode, setProfilePhotoMode] = useState("profile");
   const designCanvasRef = useRef(null);
   const canvasPopupRef = useRef(null);
   const drawMetaRef = useRef({ moved: false });
@@ -712,6 +713,17 @@ function App() {
       [key]: value,
       updatedAt: formatDate(new Date()),
     }));
+  };
+
+  const handleProfilePhotoUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    if (profilePhotoMode === "profile") {
+      updateProfileField("profile_photo_url", url);
+    } else {
+      updateProfileField("base_photo_url", url);
+    }
   };
 
   const updateNote = (brandId, value) => {
@@ -4638,18 +4650,106 @@ const handleProfilePhotoChange = (event) => {
             <div className="profile-center">
               <div className="panel profile-card">
                 <div className="profile-top">
-                  <div className="profile-photo-box">
-                    <img
-                      className="profile-photo"
-                      src={userProfile.base_photo_url}
-                      alt="profile"
-                    />
+                  <div className="profile-photo-area">
+                    <div className="profile-photo-actions">
+                      <div className="profile-photo-toggle">
+                        <button
+                          type="button"
+                          className={
+                            profilePhotoMode === "profile" ? "active" : ""
+                          }
+                          onClick={() => setProfilePhotoMode("profile")}
+                        >
+                          프로필
+                        </button>
+                        <button
+                          type="button"
+                          className={profilePhotoMode === "body" ? "active" : ""}
+                          onClick={() => setProfilePhotoMode("body")}
+                        >
+                          전신
+                        </button>
+                      </div>
+                      {isProfileEditing &&
+                        ((profilePhotoMode === "profile" &&
+                          userProfile.profile_photo_url) ||
+                          (profilePhotoMode === "body" &&
+                            userProfile.base_photo_url)) && (
+                        <button
+                          type="button"
+                          className="profile-photo-remove"
+                          aria-label="Remove photo"
+                          onClick={() => {
+                            if (profilePhotoMode === "profile") {
+                              updateProfileField("profile_photo_url", null);
+                            } else {
+                              updateProfileField("base_photo_url", null);
+                            }
+                          }}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    <div className="profile-photo-box">
+                      <label className="profile-photo-frame">
+                        {profilePhotoMode === "profile" &&
+                        userProfile.profile_photo_url ? (
+                          <img
+                            className="profile-photo"
+                            src={userProfile.profile_photo_url}
+                            alt="profile"
+                          />
+                        ) : profilePhotoMode === "body" &&
+                        userProfile.base_photo_url ? (
+                          <img
+                            className="profile-photo"
+                            src={userProfile.base_photo_url}
+                            alt="body"
+                          />
+                        ) : (
+                          <span className="profile-photo-placeholder">사진</span>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={!isProfileEditing}
+                          onClick={(event) => {
+                            event.target.value = null;
+                          }}
+                          onChange={handleProfilePhotoUpload}
+                        />
+                      </label>
+                    </div>
                   </div>
                   <div className="profile-main">
                     <div className="profile-main-header">
-                      <div>
-                        <h3>{userProfile.name}</h3>
-                        <span>{userProfile.handle}</span>
+                      <div className="profile-identity">
+                        {isProfileEditing ? (
+                          <>
+                            <input
+                              className="profile-identity-input"
+                              value={userProfile.name}
+                              onChange={(event) =>
+                                updateProfileField("name", event.target.value)
+                              }
+                              placeholder="이름"
+                            />
+                            <input
+                              className="profile-identity-input"
+                              value={userProfile.handle}
+                              onChange={(event) =>
+                                updateProfileField("handle", event.target.value)
+                              }
+                              placeholder="@handle"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <h3>{userProfile.name}</h3>
+                            <span>{userProfile.handle}</span>
+                          </>
+                        )}
                       </div>
                       <div className="profile-main-actions">
                         <button
@@ -4720,26 +4820,23 @@ const handleProfilePhotoChange = (event) => {
                           placeholder="비밀번호 변경"
                         />
                       </label>
+                      {isProfileEditing && (
+                        <label className="field">
+                          비밀번호 변경 확인
+                          <input
+                            type="password"
+                            value={profilePasswordDraft.confirm}
+                            onChange={(event) =>
+                              setProfilePasswordDraft((prev) => ({
+                                ...prev,
+                                confirm: event.target.value,
+                              }))
+                            }
+                            placeholder="비밀번호 확인"
+                          />
+                        </label>
+                      )}
                       <label className="field">
-                        비밀번호 변경 확인
-                        <input
-                          type="password"
-                          value={
-                            isProfileEditing
-                              ? profilePasswordDraft.confirm
-                              : "••••••••"
-                          }
-                          disabled={!isProfileEditing}
-                          onChange={(event) =>
-                            setProfilePasswordDraft((prev) => ({
-                              ...prev,
-                              confirm: event.target.value,
-                            }))
-                          }
-                          placeholder="비밀번호 확인"
-                        />
-                      </label>
-                      <label className="field full">
                         선호스타일
                         <input
                           value={userProfile.styleTags.join(", ")}

@@ -259,9 +259,74 @@
   border-radius: 16px;
   border: 1px solid var(--border);
   background: #ffffff;
+  overflow: hidden;
+}
+
+.profile-photo-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 180px;
+}
+
+.profile-photo-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.profile-photo-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-photo-toggle button {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  color: #111111;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-photo-toggle button.active {
+  border-color: #111111;
+  background: #111111;
+  color: #ffffff;
+}
+
+.profile-photo-remove {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: none;
+  background: #111111;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.profile-photo-frame {
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
-  overflow: hidden;
+  cursor: pointer;
+}
+
+.profile-photo-frame input {
+  display: none;
+}
+
+.profile-photo-placeholder {
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .profile-photo {
